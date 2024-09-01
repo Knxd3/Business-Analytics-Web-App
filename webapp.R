@@ -11,6 +11,7 @@ library(openai)
 library(lubridate)
 library(Cairo)
 library(bslib)
+library(thematic)
 
 # load API keys
 fmpc_set_token(Sys.getenv("API_FMPC"))
@@ -41,16 +42,17 @@ ui <- navbarPage(
     style = "margin-left: 5px;",
     selectizeInput(
       inputId = "mstrSmbl",
-      label = NULL,
-      choices = c('AAPL', 'MSFT', 'GOOG'),
+      label = "Type ticker symbol",
+      choices = c('META', 'MSFT', 'GOOG'),
       multiple = FALSE,
-      selected = 'AAPL',
-      options = list(placeholder = "Type..."),
+      selected = 'META',
+      options = list(placeholder = "Type...",
+                     onInitialize = I('function() { this.setValue(""); }')),
       width = '100%'
     )
   ),
-  column(width = 2, offset = 0, style = "margin-left: 5px;",
-         actionButton('mstrSmblBtn', 'Submit'))
+  column(width = 2, offset = 0, style = "margin-left: 5px; margin-top: 15px; display: flex; align-items: center;",
+         actionButton('mstrSmblBtn', 'Search'))
   ),
 
 
@@ -360,7 +362,7 @@ tabPanel(title = "Other", fluidRow(
 #### shiny server ----
 server <- function(input, output, session) {
   
-  current_selection <- reactiveVal(NULL)
+  i_mstrSmbl <- reactiveVal(NULL)
   
   ## data price
   stkPrc <- reactiveVal(NULL)
@@ -382,7 +384,7 @@ server <- function(input, output, session) {
   updateSelectizeInput(
     session,
     'mstrSmbl',
-    selected = 'AAPL',
+    selected = 'META',
     choices = autosuggest_,
     server = TRUE,
     options = list(maxOptions = 10)
@@ -392,7 +394,14 @@ server <- function(input, output, session) {
     
     #### data ----
     
-    current_selection(input$mstrSmbl)
+    i_mstrSmbl(input$mstrSmbl)
+    
+    # currencies
+    fxs <- lapply(paste(c("BRL", "CAD", "CNY", "EUR", "HKD", "INR", "JPY", "KRW", "MXN", "MYR", "NOK", "SEK", "SGD", "TRY", "TWD", "ZAR"), 'USD', sep = ''), fx.APIcall)
+    pair <- unname(unlist(lapply(fxs, '[', 'symbol')))
+    rate <- unname(unlist(lapply(fxs, '[', 'price')))
+    fxs <- data.frame(symbol = pair, price = rate)
+    
     ## load data
     dt_0 <- fmpc_security_profile(input$mstrSmbl)
     dt_1 <- fmpc_price_history(symbols = input$mstrSmbl, startDate = -1, endDate = Sys.Date()) %>%
@@ -408,6 +417,26 @@ server <- function(input, output, session) {
       group_by(symbol) %>% arrange(symbol, desc(calendarYear)) %>% ungroup() %>%
       mutate(fillingDate = as.Date(fillingDate, format = "%Y-%m-%d")) %>%
       mutate(calendarYear = as.integer(calendarYear)) %>%
+      mutate(across(!contains(c('calendarYear', 'Ratio', 'ratio', 'weightedAverageShsOutDil')) & where(is.numeric),
+                                                                  ~ case_when(
+                                                                    reportedCurrency == 'CNY' ~ .x * fxs[fxs['symbol'] == 'CNYUSD', 'price'],
+                                                                    reportedCurrency == 'BRL' ~ .x * fxs[fxs['symbol'] == 'BRLUSD', 'price'],
+                                                                    reportedCurrency == 'SEK' ~ .x * fxs[fxs['symbol'] == 'SEKUSD', 'price'],
+                                                                    reportedCurrency == 'EUR' ~ .x * fxs[fxs['symbol'] == 'EURUSD', 'price'],
+                                                                    reportedCurrency == 'CAD' ~ .x * fxs[fxs['symbol'] == 'CADUSD', 'price'],
+                                                                    reportedCurrency == 'TRY' ~ .x * fxs[fxs['symbol'] == 'TRYUSD', 'price'],
+                                                                    reportedCurrency == 'MXN' ~ .x * fxs[fxs['symbol'] == 'MXNUSD', 'price'],
+                                                                    reportedCurrency == 'TWD' ~ .x * fxs[fxs['symbol'] == 'TWDUSD', 'price'],
+                                                                    reportedCurrency == 'ZAR' ~ .x * fxs[fxs['symbol'] == 'ZARUSD', 'price'],
+                                                                    reportedCurrency == 'HKD' ~ .x * fxs[fxs['symbol'] == 'HKDUSD', 'price'],
+                                                                    reportedCurrency == 'SGD' ~ .x * fxs[fxs['symbol'] == 'SGDUSD', 'price'],
+                                                                    reportedCurrency == 'MYR' ~ .x * fxs[fxs['symbol'] == 'MYRUSD', 'price'],
+                                                                    reportedCurrency == 'JPY' ~ .x * fxs[fxs['symbol'] == 'JPYUSD', 'price'],
+                                                                    reportedCurrency == 'INR' ~ .x * fxs[fxs['symbol'] == 'INRUSD', 'price'],
+                                                                    reportedCurrency == 'KRW' ~ .x * fxs[fxs['symbol'] == 'KRWUSD', 'price'],
+                                                                    TRUE ~ .x
+                                                                  )
+      )) %>%
       mutate(netInvestments = abs(purchasesOfInvestments) - abs(salesMaturitiesOfInvestments),
              netRepurchases = abs(commonStockRepurchased) - abs(commonStockIssued),
              netDebtRepayment = abs(debtRepayment) - abs(otherFinancingActivites),
@@ -495,7 +524,10 @@ server <- function(input, output, session) {
           TRUE ~ (interestIncome - interestExpense) / operatingIncome
         )
       )
-
+    
+    
+    show(f_dt %>% select(otherAssets, revenue))
+    
     dt_5 <- f_dt %>%
       pivot_longer(cols = where(is.numeric) & !contains(c('symbol', 'calendarYear', 'fillingDate')),
                    names_to = 'Legend',
@@ -539,7 +571,7 @@ server <- function(input, output, session) {
     #### stock snapshot ----
     
     output$fnnclSmmry <- renderText({
-      mkap <- fmpc_security_mrktcap(current_selection(), limit = 1)
+      mkap <- fmpc_security_mrktcap(i_mstrSmbl(), limit = 1)
       
       dt <- req(stkFDta()) %>% mutate(rn = row_number()) %>% filter(rn < 6) %>%
         group_by(symbol) %>% summarise(across(
@@ -758,7 +790,9 @@ server <- function(input, output, session) {
     #### fundamentals table ----
     
     output$stkFndmntlsTbl <- renderDT({
-      datatable(req(stkFDta()) %>% filter(calendarYear >= 2015),
+      datatable(req(stkFDta()) %>% filter(calendarYear >= 2018) %>%
+                mutate(across(!contains(c('ratio', 'calendarYear', 'Ratio', 'average', 
+                                          'otherAssets', 'otherWorkingCapital', 'otherInvestingActivites')) & where(is.numeric), ~scales::label_number(scale_cut = scales::cut_short_scale())(.x))),
                 filter = "top",
                 options = list(
                   pageLength = 10,
@@ -771,7 +805,6 @@ server <- function(input, output, session) {
                 class = "cell-border stripe hover"  # Adds styling to the table
       )
     })
-    
     
     #### model ----
     
@@ -790,7 +823,7 @@ server <- function(input, output, session) {
           scale_x_date(date_breaks = '1 year', date_labels = "%y", name = '') +
           scale_y_continuous(n.breaks = 11, trans = ifelse(input$i_mdlLg == TRUE, 'log', 'identity'), labels = scales::dollar_format(), name = '') +
           coord_cartesian(ylim = c(max(d_e$mn) * 0.95, max(d_e$mx)) * 1.15, expand = T) +
-          labs(title = paste(current_selection(),
+          labs(title = paste(i_mstrSmbl(),
                              ifelse(input$i_mdlMtrc == 'epsdiluted',
                                     'Price vs. EPS x average multiple',
                                     ifelse(input$i_mdlMtrc == 'fcfps',
@@ -833,7 +866,7 @@ server <- function(input, output, session) {
     
     output$vltn <- renderPlotly({
       
-      d_fd <- req(stkFDta()) %>% filter(symbol == current_selection()) %>%
+      d_fd <- req(stkFDta()) %>% filter(symbol == i_mstrSmbl()) %>%
         select(symbol, calendarYear, fillingDate, epsdiluted, fcfps, divps, bookps, netdebtps, operatingps, revenueps) %>%
         arrange(desc(fillingDate)) %>%
         mutate(across(!contains(c('date', 'symbol', 'calendarYear') ), ~moving.average(.x, span = input$i_vltnMvngAvg)) )
@@ -940,7 +973,7 @@ server <- function(input, output, session) {
     #### transcript ----
     
     output$trnscrpt <- renderUI({
-      tx_d <- fmpc_earning_call_transcript(current_selection(), quarter = input$trnscrptQrtr, year = input$trnscrptYr)
+      tx_d <- fmpc_earning_call_transcript(i_mstrSmbl(), quarter = input$trnscrptQrtr, year = input$trnscrptYr)
       # tagList(
       #   tags$h2("Description"),
       #   tags$p(tx_d)
@@ -953,7 +986,7 @@ server <- function(input, output, session) {
       output <- ""
       for (line in strsplit(tx_d %>% pull(content), "\n")[[1]]) {
         if (grepl(": ", line)) {
-          output <- paste(output, "<br>", "<h4> Paragraph: </h4>", line, "<br>")
+          output <- paste(output, "<br>", "<h4> > </h4>", line, "<br>")
         } else {
           output <- paste(output, line)
         }

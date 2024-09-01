@@ -41,7 +41,7 @@ moving.average <- function(x, span = 1) {
 
 #### get FX rate - API call ----
 fx.APIcall <- function(currency.pair) {
-  res <- httr::GET(url = paste('https://financialmodelingprep.com/api/v3/quote/', currency.pair, '?apikey=975f47f0bca36cce0a7f3c6e9b5639a7', sep = ''))
+  res <- httr::GET(url = paste('https://financialmodelingprep.com/api/v3/quote/', currency.pair, '?apikey=', Sys.getenv("API_FMPC"), sep = ''))
   raw.content <- httr::content(res, as = 'raw')
   content <- base::rawToChar(raw.content)
   fx <- jsonlite::fromJSON(content)

@@ -35,8 +35,10 @@ autosuggest_ <- fmpc_symbols_available() %>% filter(type == "stock" &
 #### shiny UI ----
 ui <- navbarPage(
   theme = bs_theme(bootswatch = "minty"),
-  title = "Value Quant Investment Platform - v1.0",
-  header = fixedRow(column(
+  collapsible = TRUE, 
+  # title = "Value Quant Investment Platform - v1.0",
+  title = tags$img(src = "logo.png", width = "300px;", style = "margin-right: 5px;"),
+  header = fluidRow(column(
     width = 4,
     offset = 0,
     style = "margin-left: 5px;",
@@ -55,17 +57,16 @@ ui <- navbarPage(
          actionButton('mstrSmblBtn', 'Search'))
   ),
 
-
   #### tab general ----
   tabPanel(title = 'General',
            fluidRow(column(width = 6, style = "padding: 25px; padding-top: 5px;", 
                            verticalLayout(
-                             tableOutput("fnnclSmmry"),
                              tableOutput("prfl")
                              )),
                     column(width = 6, style = "padding: 25px; padding-top: 5px;",
                            verticalLayout(
                              plotlyOutput('stkP'),
+                             tableOutput("fnnclSmmry"),
                              uiOutput('dscrpt')
                              )
                     ),
@@ -166,7 +167,7 @@ ui <- navbarPage(
                                       height = "700px")))
            ),
   
-  #### tab model ----
+#### tab model ----
 tabPanel(
   title = "Model",
   sidebarLayout(
@@ -185,8 +186,11 @@ tabPanel(
       ),
       radioButtons(
         'i_mdlMtrc',
-        "Profit Metric: ",
-        choices = c('epsdiluted', 'fcfps', 'operatingps', 'revenueps'),
+        "Profit Metric (per Share): ",
+        choices = c('Net Income' = 'epsdiluted', 
+                    'Free Cash Flow' = 'fcfps', 
+                    'Operating Earnings' = 'operatingps', 
+                    'Revenue' = 'revenueps'),
         selected = 'epsdiluted',
         inline = TRUE
       ),
@@ -219,7 +223,24 @@ tabPanel(
 tabPanel(
   title = "Valuation",
   sidebarLayout(
+    
     sidebarPanel(
+      width = 3,
+      selectInput(
+        "i_vltnSldr",
+        "Select Facets: ",
+        choices = c("Free Cash Flow" = "P-FCF",
+                    "Net Income" = "PE",
+                    "Enterprise Value" = "EV-FCF",
+                    "Revenue" = "P-REVENUE",
+                    "Operating Income" = "P-OP",
+                    "Dividends" = "P-DIV",
+                    "Book Value" = "P-BOOK",
+                    "Debt" = "P-DEBT"),
+        selected = c("P-FCF", "PE", "EV-FCF", "P-BOOK", "P-OP"),
+        multiple = TRUE,
+        selectize = T
+      ),
       sliderInput(
         "i_stkVltnSldr",
         "Window: ",
@@ -235,9 +256,9 @@ tabPanel(
       numericInput(
         'i_vltnMvngAvg',
         'Set Moving Average: ',
-        value = 1,
-        min = 1,
-        max = 10,
+        value = 2,
+        min = 2,
+        max = 15,
         step = 1
       ),
       checkboxInput(
@@ -248,12 +269,14 @@ tabPanel(
       
     ),
     mainPanel(
+      width = 9,
       verticalLayout(
         column(width = 12,
                style = "display: flex; flex-direction: column; align-items: center;",
         plotlyOutput('vltn', 
-                   width = "81%",
-                   height = "2000px")
+                   width = "100%",
+                   height = "900px"
+                   )
         )
       )
     )
@@ -525,9 +548,6 @@ server <- function(input, output, session) {
         )
       )
     
-    
-    show(f_dt %>% select(otherAssets, revenue))
-    
     dt_5 <- f_dt %>%
       pivot_longer(cols = where(is.numeric) & !contains(c('symbol', 'calendarYear', 'fillingDate')),
                    names_to = 'Legend',
@@ -572,8 +592,9 @@ server <- function(input, output, session) {
     
     output$fnnclSmmry <- renderText({
       mkap <- fmpc_security_mrktcap(i_mstrSmbl(), limit = 1)
+      avg.over <- 3
       
-      dt <- req(stkFDta()) %>% mutate(rn = row_number()) %>% filter(rn < 6) %>%
+      dt <- req(stkFDta()) %>% mutate(rn = row_number()) %>% filter(rn <= avg.over) %>%
         group_by(symbol) %>% summarise(across(
           c(
             'freeCashFlow',
@@ -584,9 +605,13 @@ server <- function(input, output, session) {
             'researchAndDevelopmentExpenses',
             'totalDebt'
           ),
-          ~ scales::comma(mean(.x))
+          ~ mean(.x)
         )) %>%
-        left_join(mkap, by = "symbol") %>% mutate(marketCap = scales::comma(marketCap))
+        left_join(mkap, by = "symbol") %>% mutate(`P-FCF` = marketCap / freeCashFlow,
+                                                  PE = marketCap / netIncome,
+                                                  `P-Book` = marketCap / bookValue,
+                                                  EV = marketCap + totalDebt,
+                                                  `EV-FCF` = EV / freeCashFlow) %>% mutate(across(where(is.numeric), ~scales::label_number(scale_cut = scales::cut_short_scale(), accuracy = 0.01)(.x)))
       
       dt %>% select(-symbol, -date) %>% t(.) %>% kable() %>%
         kable_styling(
@@ -596,7 +621,7 @@ server <- function(input, output, session) {
         ) %>%
         column_spec(1, bold = TRUE) %>%
         row_spec(0, bold = TRUE, color = "white") %>%
-        add_header_above(c("Financials" = 1, "5y Avg." = 1))
+        add_header_above(c("Financials" = 1, "3y Avg." = 1))
         
     })
     
@@ -771,8 +796,8 @@ server <- function(input, output, session) {
           ggplot() +
           geom_line(data = cohort.summary, aes(x = calendarYear, y = med), linewidth = 1) +
           geom_ribbon(data = cohort.summary, aes(ymin = min, ymax = max , x = calendarYear, y = med), alpha = 0.2) +
-          geom_line(data = smry, aes(x = fillingDate, y = Value), linewidth = 1,  colour = 'red') +
-          geom_point(data = smry, aes(x = fillingDate, y = Value), colour = 'red') +
+          geom_line(data = smry, aes(x = fillingDate, y = Value), linewidth = 1,  colour = '#FF7851') +
+          geom_point(data = smry, aes(x = fillingDate, y = Value), colour = '#FF7851') +
 
             scale_x_date(date_breaks = "2 years", date_labels = "%y") +
             scale_y_continuous(n.breaks = 7, limits = c(0, NA), oob = scales::squish, labels = scales::percent_format()  ) +
@@ -812,14 +837,14 @@ server <- function(input, output, session) {
       
       d_e <- stkMdlRctv()
       
-      ggplotly(
-        d_e %>%
+      
+      p <- d_e %>%
           ggplot() +
           geom_area(aes(x = date, y = close), alpha = 0.15) +
           geom_line(aes(x = date, y = close)) +
-          geom_point(aes(x = fillingDate, y = Estimate), colour = 'red', shape = 3) +
-          geom_smooth(aes(x = fillingDate, y = Estimate), colour = 'red', linetype = 'dashed', method = 'lm', formula = y ~ splines::ns(x, 2), se = F, fullrange = TRUE) +
-          geom_smooth(aes(x = fillingDate, y = Estimate), colour = 'red', method = 'lm', se = F, fullrange = TRUE) +
+          geom_point(aes(x = fillingDate, y = Estimate), colour = '#FF7851', shape = 3) +
+          geom_smooth(aes(x = fillingDate, y = Estimate), colour = '#56CC9D', method = 'lm', formula = y ~ splines::ns(x, 2), se = F, fullrange = TRUE, linetype = 'dashed') +
+          geom_smooth(aes(x = fillingDate, y = Estimate), colour = '#56CC9D', method = 'lm', se = F, fullrange = TRUE) +
           scale_x_date(date_breaks = '1 year', date_labels = "%y", name = '') +
           scale_y_continuous(n.breaks = 11, trans = ifelse(input$i_mdlLg == TRUE, 'log', 'identity'), labels = scales::dollar_format(), name = '') +
           coord_cartesian(ylim = c(max(d_e$mn) * 0.95, max(d_e$mx)) * 1.15, expand = T) +
@@ -834,7 +859,14 @@ server <- function(input, output, session) {
                              '—',
                              "Annual")) +
           theme_minimal()
-      ) %>% style(hoverinfo = "none", traces = 1)
+      # b_ <- ggplot_build(p)
+      # b_lm_ns_ <- b_[[4]]
+      # b_lm <- b_[[5]]
+      # write.csv(b_lm_ns_, 'ggplot_obj.csv')
+      
+      ggplotly(
+        p
+      ) %>% style(hoverinfo = "text") %>% style(hoverinfo = "none", traces = c(1, 4,5))
     })
     
     
@@ -869,7 +901,8 @@ server <- function(input, output, session) {
       d_fd <- req(stkFDta()) %>% filter(symbol == i_mstrSmbl()) %>%
         select(symbol, calendarYear, fillingDate, epsdiluted, fcfps, divps, bookps, netdebtps, operatingps, revenueps) %>%
         arrange(desc(fillingDate)) %>%
-        mutate(across(!contains(c('date', 'symbol', 'calendarYear') ), ~moving.average(.x, span = input$i_vltnMvngAvg)) )
+        mutate(across(!contains(c('date', 'symbol', 'calendarYear') ), ~moving.average(.x, span = input$i_vltnMvngAvg, order = "up"), .names = "{col}_ma" ) )
+      
       
       mx_cy <- max(d_fd$calendarYear, na.rm = T)
       # print(mx_cy)
@@ -903,24 +936,73 @@ server <- function(input, output, session) {
         left_join(
           d_fd2,
           by = c("calendarYear" = "calendarYear")
-        ) %>% mutate(PE = close/epsdiluted,
-                     PFCF = close/fcfps,
-                     PDIV = close/divps,
-                     PBOOK = close/bookps,
-                     EVFCF = (close + netdebtps) / fcfps,
-                     PO = close/operatingps,
-                     PR = close / revenueps
+        ) %>% mutate(PE_Value = close/epsdiluted,
+                     `P-FCF_Value` = close/fcfps,
+                     `P-DIV_Value` = close/divps,
+                     `P-BOOK_Value` = close/bookps,
+                     `EV-FCF_Value` = (close + netdebtps) / fcfps,
+                     `P-OP_Value` = close/operatingps,
+                     `P-REVENUE_Value` = close / revenueps,
+                     `P-DEBT_Value` = close / netdebtps,
+                     
+                     PE_Trend = close/epsdiluted_ma,
+                     `P-FCF_Trend` = close/fcfps_ma,
+                     `P-DIV_Trend` = close/divps_ma,
+                     `P-BOOK_Trend` = close/bookps_ma,
+                     `EV-FCF_Trend` = (close + netdebtps_ma) / fcfps_ma,
+                     `P-OP_Trend` = close/operatingps_ma,
+                     `P-REVENUE_Trend` = close / revenueps_ma,
+                     `P-DEBT_Trend` = close / netdebtps_ma
                      ) %>%
-        pivot_longer(cols = c(PE, PFCF, PDIV, PBOOK, EVFCF, PO, PR),
-                     names_to = 'Legend',
-                     values_to = 'Values') %>%
-        mutate(Values = round(Values, 2))
+        pivot_longer(cols = c(c(PE_Value, `P-FCF_Value`, `P-DIV_Value`, `P-BOOK_Value`, `EV-FCF_Value`, `P-OP_Value`, `P-REVENUE_Value`, `P-DEBT_Value`), 
+                              c(PE_Trend, `P-FCF_Trend`, `P-DIV_Trend`, `P-BOOK_Trend`, `EV-FCF_Trend`, `P-OP_Trend`, `P-REVENUE_Trend`, `P-DEBT_Trend`)),
+                     names_to = c('Legend', ".value"),
+                     # values_to = 'Value'
+                     names_sep = "_"
+                     ) %>%
+        group_by(Legend) %>%
+        mutate(Value = round(Value, 2),
+               Trend = round(Trend, 2),
+               # Smooth = round(moving.average(Value, span = 120, order = 'down'), 2)
+               ) %>%
+        mutate(Legend = factor(Legend, ordered = TRUE, levels = c("PE", "P-FCF", "EV-FCF", "P-OP", "P-REVENUE", "P-BOOK", "P-DEBT", "P-DIV")))
       # 
-      # write.csv(d_fd2, 'valuation_test.csv')
+      # write.csv(vltn_d, 'valuation_test3.csv')
+      
+      # vltn_d <- prc %>% 
+      #   left_join(
+      #     d_fd2,
+      #     by = c("calendarYear" = "calendarYear")
+      #   ) %>% pivot_longer(
+      #     cols = c(epsdiluted, fcfps, divps, bookps, netdebtps, operatingps, revenueps, ev_spec),
+      #     names_to = 'Legend',
+      #     values_to = 'scores'
+      #   ) %>% group_by(Legend) %>% mutate(Value = ifelse(Legend == "ev_spec", (close + debtps_) / fcfps_, close / scores),
+      #                                     debtps_ma = moving.average(debtps_, span = input$i_vltnMvngAvg, order = "down"),
+      #                                     fcfps_ma = moving.average(fcfps_, span = input$i_vltnMvngAvg, order = "down"),
+      #                                     
+      #                                     Trend = ifelse(Legend == "ev_spec", (close + debtps_ma) / fcfps_ma,  
+      #                                                    close / moving.average(scores, span = input$i_vltnMvngAvg, order = "down"))) %>% ungroup() %>% mutate(
+      #                  Legend = case_when(Legend == "epsdiluted" ~ "PE",
+      #                                     Legend == "fcfps" ~ "P-FCF",
+      #                                     Legend == "divps" ~ "P-DIV",
+      #                                     Legend == "bookps" ~ "P-BOOK",
+      #                                     Legend == "netdebtps" ~ "P-DEBT",
+      #                                     Legend == "operatingps" ~ "P-OP",
+      #                                     Legend == "revenueps" ~ "P-REVENUE",
+      #                                     Legend == "ev_spec" ~ "EV-FCF") 
+      #                ) %>% mutate(Value = round(Value, 2), 
+      #                             Trend = round(Trend, 2),
+      #                             Legend = factor(Legend, ordered = TRUE, levels = c("PE", "P-FCF", "EV-FCF", "P-OP", "P-REVENUE", "P-BOOK", "P-DEBT", "P-DIV")))
+      # 
+      # write.csv(vltn_d, 'valuation_test2.csv')
+        
       
       ggplotly(
-      vltn_d %>% ggplot() +
-        geom_line(aes(x = date, y = Values), colour = 'red') +
+      vltn_d %>% filter(Legend %in% input$i_vltnSldr) %>% ggplot() +
+        geom_line(aes(x = date, y = Value), colour = '#56CC9D', linetype = 'dashed', alpha = 0.7) +
+        geom_line(aes(x = date, y = Trend), colour = '#FF7851') +
+        # geom_line(aes(x = date, y = Smooth), alpha = 0.5) +
         scale_x_date(date_breaks = '2 years',
                      date_labels = '%y',
                      name = '') +
@@ -930,17 +1012,21 @@ server <- function(input, output, session) {
           labels = scales::number_format(),
           name = ''
         ) +
-        facet_wrap(vars(Legend), ncol = 1, scales = 'free_y') +
-        labs(title = 'Valuation Chart',
-             subtitle = paste("Moving Average —", as.character(input$i_vltnMvngAvg))) +
+        facet_wrap(vars(Legend), ncol = 2, scales = 'free_y') +
+        # facet_grid(rows = vars(Legend), cols = vars(2), scales = 'free_y') +
+        labs(title = paste0('Valuation Chart — ', as.character(input$i_vltnMvngAvg), '-year Moving Avg.'),
+             # subtitle = paste("Moving Average —", as.character(input$i_vltnMvngAvg))
+             ) +
         theme_minimal() +
         theme(
           axis.text = element_text(face = "bold", size = 10),
           plot.title = element_text(face = "bold", size = 15),
-          strip.text = element_text(face = "bold", size = 10)
+          strip.text = element_text(face = "bold", size = 10),
+          panel.spacing.x = unit(-0.65, "cm")
+          # panel.spacing.y = unit(0, "lines")
         )
       )
-        
+      
     })
     
     #### capital allocation ----

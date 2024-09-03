@@ -51,37 +51,98 @@ fx.APIcall <- function(currency.pair) {
 }
 
 
+#### general API call ----
+general.APIcall <- function(endpoint, columns = NULL, symbol = NULL) {
+  if (endpoint == "Press-Release") {
+    url = paste0('https://financialmodelingprep.com/api/v3/press-releases?page=0&apikey=', Sys.getenv("API_FMPC"))
+  } else if (endpoint == "News") {
+    url = paste0("https://financialmodelingprep.com/api/v4/general_news?page=0&apikey=", Sys.getenv("API_FMPC"))
+  } else if (endpoint == "News-Stock") {
+    url = paste0("https://financialmodelingprep.com/api/v3/stock_news?tickers=", symbol, "&page=0&apikey=", Sys.getenv("API_FMPC"))
+  } else if (endpoint == "Press-Release-Stock") {
+    url = paste0("https://financialmodelingprep.com/api/v3/press-releases/", symbol, "?apikey=", Sys.getenv("API_FMPC"))
+  } else if (endpoint == "Econ") {
+    url = paste0("https://financialmodelingprep.com/api/v4/economic?name=", symbol, "&apikey=", Sys.getenv("API_FMPC"))
+  } else if (endpoint == "Insider-Trans") {
+    url = paste0("https://financialmodelingprep.com/api/v4/insider-roaster-statistic?symbol=", symbol, "&apikey=", Sys.getenv("API_FMPC"))
+  }
+
+  
+  res <- httr::GET(url)
+  raw.content <- httr::content(res, as = 'raw')
+  content_json <- base::rawToChar(raw.content)
+  content_df <- jsonlite::fromJSON(content_json)
+  if (is.null(columns)) {
+    content_out <- content_df
+  }
+  else {
+  content_out <- content_json %>% select(all_of(columns))
+  }
+  return(content_out)
+}
 
 
 
-
-# 
-# library(tidyr)
-# library(dplyr)
-# 
-# # Example data
-# df <- tibble(
-#   id = 1:3,
-#   x1 = c(1, 2, 3),
-#   x2 = c(4, 5, 6),
-#   y1 = c(99, 100, 101),
-#   y2 = c(102, 103, 104)
-# )
-# 
-# df
-# 
-# # df %>% pivot_longer(cols = c( c("x1", "x2"), c("y1", "y2")), names_to = c('l1', 'l2'), names_pattern = '(.)(.)')
-# 
-# df_2 <- tibble(
-#   id = 1:6,
-#   l1 = c('x1', 'x1', 'x1', 'x2', 'x2', 'x2'),
-#   l2 = c('y1', 'y1', 'y1', 'y2', 'y2', 'y2'),
-#   v1 = c(1, 2, 3, 4, 5, 6),
-#   v2 = c('a', 'b', 'c', 'd', 'e', 'f')
-# )
-# 
-# 
-# df_2
-# 
-# 
-# df %>% pivot_longer(cols = c("x1", "x2", "y1", "y2"), names_to = 'l', values_to = 'v') %>% arrange(l) %>% mutate(i = substr(l, 1, 1)) %>% group_by(id) %>% pivot_wider(names_from = c(l), values_from = v)
+#### news/press-release div container ----
+create_news_container <- function(symbol, type = "News", date = NA, title = NA, text = NA, publishedDate = NA, image = NA, site = NA, url = NA) {
+ 
+  
+   if (type == "News") {
+    
+    
+    
+    div(
+      class = "news-container",
+      style = "border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex;",
+      
+      div(
+        class = "news-image",
+        style = "flex: 0 0 150px; margin-right: 15px;",
+        img(src = image, alt = title, style = "width: 100%; height: auto; border-radius: 5px;")
+      ),
+      
+      div(
+        class = "news-content",
+        style = "flex: 1;",
+        
+        div(
+          class = "news-header",
+          style = "display: flex; justify-content: space-between; margin-bottom: 10px;",
+          
+          strong(site, style = "font-size: 16px; color: #1a5f7a;"),
+          span(format(as.POSIXct(publishedDate), "%B %d, %Y %H:%M"), style = "color: #666;")
+        ),
+        
+        h5(title, style = "margin-top: 0; margin-bottom: 10px; color: #333;"),
+        
+        p(substr(text, 1, 250), "...", style = "margin: 0 0 10px 0; color: #555;"),
+        
+        a(href = url, "Read more", target = "_blank", 
+          style = "color: #1a5f7a; text-decoration: none; font-weight: bold;")
+      )
+    )
+  }
+ 
+  
+   else if (type == "Press-Release") {
+    
+    
+    
+  div(
+    class = "news-container",
+    style = "border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px;",
+    
+    div(
+      class = "news-header",
+      style = "display: flex; justify-content: space-between; margin-bottom: 10px;",
+      
+      strong(symbol, style = "font-size: 18px; color: #1a5f7a;"),
+      span(format(as.POSIXct(date), "%B %d, %Y %H:%M"), style = "color: #666;")
+    ),
+    
+    h5(title, style = "margin-top: 0; margin-bottom: 10px; color: #333;"),
+    
+    p(substr(text, 1, 350), style = "margin: 0; color: #555;")
+  )
+  }
+}

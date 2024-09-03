@@ -4,14 +4,13 @@ library(tidyr)
 library(DT)
 library(kableExtra)
 library(ggplot2)
-library(bizdays)
 library(plotly)
 library(fmpcloudr)
 library(openai)
 library(lubridate)
 library(Cairo)
 library(bslib)
-library(thematic)
+# library(thematic)
 
 # load API keys
 fmpc_set_token(Sys.getenv("API_FMPC"))
@@ -24,50 +23,186 @@ options(
   dpi = 300,
   scipen = 999
 )
-thematic_shiny(font = "auto")
+# thematic_shiny(font = "auto")
 
 # load functions
 source('webfunctions.R')
+# 
+# autosuggest_ <- fmpc_symbols_available() %>% filter(type == "stock" &
+#                                                       exchangeShortName %in% c("NYSE", "NASDAQ")) %>% pull(symbol)
+# write.csv(autosuggest_, 'availab_symbols.csv')
 
-autosuggest_ <- fmpc_symbols_available() %>% filter(type == "stock" &
-                                                      exchangeShortName %in% c("NYSE", "NASDAQ")) %>% pull(symbol)
+autosuggest_ <- read.csv('www/availab_symbols.csv') %>% pull(x)
 
 #### shiny UI ----
 ui <- navbarPage(
+  
+  includeCSS("www/styles.css"),
+  
+  id = "navbar",
   theme = bs_theme(bootswatch = "minty"),
   collapsible = TRUE, 
   # title = "Value Quant Investment Platform - v1.0",
   title = tags$img(src = "logo.png", width = "300px;", style = "margin-right: 5px;"),
-  header = fluidRow(column(
-    width = 4,
-    offset = 0,
-    style = "margin-left: 5px;",
-    selectizeInput(
-      inputId = "mstrSmbl",
-      label = "Type ticker symbol",
-      choices = c('META', 'MSFT', 'GOOG'),
-      multiple = FALSE,
-      selected = 'META',
-      options = list(placeholder = "Type...",
-                     onInitialize = I('function() { this.setValue(""); }')),
-      width = '100%'
+  # header = fluidRow(column(
+  #   width = 4,
+  #   offset = 0,
+  #   style = "margin-left: 5px;",
+  #   selectizeInput(
+  #     inputId = "mstrSmbl",
+  #     label = "Type ticker symbol",
+  #     choices = c('META', 'MSFT', 'GOOG'),
+  #     multiple = FALSE,
+  #     selected = 'META',
+  #     options = list(
+  #       placeholder = "Type...",
+  #       onInitialize = I('function() { this.setValue(""); }')
+  #     ),
+  #     width = '100%'
+  #   )),
+  # column(width = 2, offset = 0, style = "margin-left: 5px; margin-top: 15px; display: flex; align-items: center;",
+  #        actionButton('mstrSmblBtn', 'Search'))
+  # ),
+  
+  header = fluidRow(
+    column(
+      width = 4,
+      offset = 0,
+      style = "margin-left: 5px; margin-top: 10px;",
+      
+      selectizeInput(
+        inputId = "mstrSmbl",
+        label = NULL,  # Removed label for a cleaner look
+        choices = c('META', 'MSFT', 'GOOG'),
+        multiple = FALSE,
+        selected = 'META',
+        options = list(
+          placeholder = "Type ticker symbol...",
+          onInitialize = I('function() { this.setValue(""); }')
+        ),
+        width = '100%',
+        # style = "padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ddd;"
+      )
+    ),
+    column(
+      width = 2,
+      offset = 0,
+      style = "margin-left: 5px; margin-top: 10px; display: flex; align-items: center;",
+      
+      actionButton(
+        inputId = 'mstrSmblBtn',
+        label = "Search",
+        style = "padding: 10px; font-size: 16px; border-radius: 5px; border: none; cursor: pointer;"
+      )
     )
   ),
-  column(width = 2, offset = 0, style = "margin-left: 5px; margin-top: 15px; display: flex; align-items: center;",
-         actionButton('mstrSmblBtn', 'Search'))
+  
+  
+  footer = tagList(
+    div(class = "footer",
+        "© 2024 My App. All rights reserved.",
+        tags$a(href = "#href", "Visit the substack.")
+    )
+  ),
+  
+  #### tab intro ----
+  tabPanel(title = "Intro",
+           fluidRow(column(width = 10, offset = 1,
+  #### econ/markets ----
+                           # verticalLayout(
+                           #   div(
+                           #    style = "border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex;",
+                           #    div(style = "flex: 1;",
+                           #    tags$h5('Economic Indicators'),
+                           #    plotlyOutput('ecn',
+                           #                 height = '700px')
+                           #    )
+                           #   ),
+                           # div(
+                           #   style = "border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex;",
+                           #   div(style = "flex: 1;",
+                           #   tags$h5('Global Market Index'),
+                           #   plotlyOutput('mrkts')
+                           #   )
+                           # )
+                           # )
+  # more styling
+  verticalLayout(
+    div(
+      class = "dashboard-box",
+      div(
+        class = "dashboard-box-content",
+        div(
+          class = "dashboard-box-header",
+          h4(class = "dashboard-box-title", 'Economic Indicators'),
+          actionButton("info_ecn", "ℹ️", class = "dashboard-info-button")
+        ),
+        div(
+          class = "dashboard-plot-container",
+          plotlyOutput('ecn', height = '950px')
+        )
+      )
+    ),
+    div(
+      class = "dashboard-box",
+      div(
+        class = "dashboard-box-content",
+        div(
+          class = "dashboard-box-header",
+          h4(class = "dashboard-box-title", 'Global Market Index'),
+          actionButton("info_mrkts", "ℹ️", class = "dashboard-info-button")
+        ),
+        div(
+          class = "dashboard-plot-container",
+          plotlyOutput('mrkts', height = '450px')
+        )
+      )
+    )
+  )
+  
+                           )
+                    ),
+  #### news/press ----
+           fluidRow(column(width = 10, offset = 1, 
+                       tabsetPanel(type = "tabs",
+                       tabPanel("News", uiOutput("nws")),            
+                       tabPanel("Press Release", uiOutput('prssRls'))
+                       
+                       )
+           )
+           )
   ),
 
   #### tab general ----
   tabPanel(title = 'General',
            fluidRow(column(width = 6, style = "padding: 25px; padding-top: 5px;", 
                            verticalLayout(
+                             tabsetPanel(type = "tabs",
+                                         tabPanel("News", uiOutput('stkNws')),
+                                         tabPanel("Press Release", uiOutput('stkPrs'))
+                                         ),
                              tableOutput("prfl")
-                             )),
+                             
+                           )
+                           ),
                     column(width = 6, style = "padding: 25px; padding-top: 5px;",
                            verticalLayout(
-                             plotlyOutput('stkP'),
-                             tableOutput("fnnclSmmry"),
-                             uiOutput('dscrpt')
+                             div(class = "ncontainer",
+                                 div(class = "n-content",
+                             plotlyOutput('stkP')
+                             )
+                             ),
+                             div(class = "ncontainer",
+                                 div(class = "n-content",
+                                    tableOutput("fnnclSmmry")
+                                 )
+                             ),
+                             div(class = "ncontainer",
+                                 div(class = "n-content",
+                                  uiOutput('dscrpt')
+                                 )
+                             )
+                             
                              )
                     ),
            )
@@ -149,22 +284,62 @@ ui <- navbarPage(
                 selected = 'All Sectors'
               )
              ),
-             mainPanel(
-               verticalLayout(
-                 
-                 plotlyOutput('stkFndmt'),
-
+           #   mainPanel(
+           #     verticalLayout(
+           #       
+           #       plotlyOutput('stkFndmt'),
+           # 
+           #     )
+           #   )
+           # ),
+           # fluidRow(column(width = 12, offset = 0, style = "align: center;",
+           #                 plotOutput('stkFndmntlsRltv',
+           #                            width = "95vw",
+           #                            height = "700px"))
+           #          ),
+           # fluidRow(column(width = 12, offset = 0, style = "align: center;",
+           #                 DTOutput('stkFndmntlsTbl',
+           #                            width = "95vw",
+           #                            height = "700px"))
+           #          )
+           
+           
+           ## more styling
+           
+           mainPanel(
+             verticalLayout(
+               div(class = "ncontainer",
+                   div(class = "n-content",
+                       plotlyOutput('stkFndmt')
+                   )
                )
+             
+             )
              )
            ),
-           fluidRow(column(width = 12, offset = 0, style = "align: center;",
-                           plotOutput('stkFndmntlsRltv',
-                                      width = "95vw",
-                                      height = "700px"))),
-           fluidRow(column(width = 12, offset = 0, style = "align: center;",
-                           DTOutput('stkFndmntlsTbl',
-                                      width = "95vw",
-                                      height = "700px")))
+             fluidRow(
+               column(width = 12, offset = 0, style = "align: center;",
+                      div(class = "ncontainer",
+                          div(class = "n-content",
+                              plotOutput('stkFndmntlsRltv',
+                                         width = "95vw",
+                                         height = "700px")
+                          )
+                      )
+               )
+             ),
+             fluidRow(
+               column(width = 12, offset = 0, style = "align: center;",
+                      div(class = "ncontainer",
+                          div(class = "n-content",
+                              DTOutput('stkFndmntlsTbl',
+                                       width = "95vw",
+                                       height = "700px")
+                          )
+                      )
+               )
+             )
+           
            ),
   
 #### tab model ----
@@ -211,7 +386,12 @@ tabPanel(
     ),
     mainPanel(
       verticalLayout(
-      plotlyOutput('stkMdl'),
+        div(class = "ncontainer",
+            div(class = "n-content",
+                
+              plotlyOutput('stkMdl')
+            )
+        ),
       tableOutput('stkMdlTbl')
       
       )
@@ -271,12 +451,16 @@ tabPanel(
     mainPanel(
       width = 9,
       verticalLayout(
+        div(class = "ncontainer",
+            div(class = "n-content",
         column(width = 12,
                style = "display: flex; flex-direction: column; align-items: center;",
         plotlyOutput('vltn', 
                    width = "100%",
                    height = "900px"
                    )
+        )
+            )
         )
       )
     )
@@ -385,6 +569,8 @@ tabPanel(title = "Other", fluidRow(
 #### shiny server ----
 server <- function(input, output, session) {
   
+  
+  
   i_mstrSmbl <- reactiveVal(NULL)
   
   ## data price
@@ -400,8 +586,53 @@ server <- function(input, output, session) {
   
   sp5 <- reactive({
     # market history
-    fmpc_price_history(symbols = "^GSPC", startDate = input$i_stkMdlSldr[1])
+    # United States
+    # Dow Jones Industrial Average: ^DJI
+    # S&P 500: ^GSPC
+    # NASDAQ Composite: ^IXIC
+    # Russell 2000: ^RUT
+    # Wilshire 5000: ^W5000
+    # Canada
+    # S&P/TSX Composite Index: ^GSPTSE
+    # Europe
+    # FTSE 100 (UK): ^FTSE
+    # DAX (Germany): ^GDAXI
+    # CAC 40 (France): ^FCHI
+    # EURO STOXX 50: ^STOXX50E
+    # Asia
+    # Nikkei 225 (Japan): ^N225
+    # Hang Seng Index (Hong Kong): ^HSI
+    # SSE Composite Index (China): ^SSE
+    # Australia
+    # S&P/ASX 200: ^AXJO
+    # Latin America
+    # IBOVESPA (Brazil): ^BVSP
+    # Merval (Argentina): ^MERV
+    
+    fmpc_price_history(symbols = "^GSPC", startDate = input$i_stkMdlSldr[1]) %>% select(symbol, date, close)
   })
+  
+  # dji <- reactive({
+  #   fmpc_price_history(symbols = "^DJI", startDate = input$i_stkMdlSldr[1]) %>% select(symbol, date, close)
+  # })
+  # 
+  # ndq <- reactive({
+  #   fmpc_price_history(symbols = "^IXIC", startDate = input$i_stkMdlSldr[1]) %>% select(symbol, date, close)
+  # })
+  # 
+  eur50 <- reactive({
+    fmpc_price_history(symbols = "^STOXX50E", startDate = Sys.Date() - 90) %>% select(symbol, date, close)
+  })
+  
+  jpn <- reactive({
+    fmpc_price_history(symbols = "^N225", startDate = Sys.Date() - 90) %>% select(symbol, date, close)
+  })
+  
+  chn <- reactive({
+    fmpc_price_history(symbols = "^HSI", startDate = Sys.Date() - 90) %>% select(symbol, date, close)
+  })
+  
+  
   
   ## auto-suggest
   updateSelectizeInput(
@@ -412,8 +643,174 @@ server <- function(input, output, session) {
     server = TRUE,
     options = list(maxOptions = 10)
   )
+  
+  #### intro ----
+  
+  #### econ ----
+  
+    # GDP,
+    # realGDP,
+    # nominalPotentialGDP,
+    # realGDPPerCapita,
+    # federalFunds,
+    # CPI,
+    # inflationRate,
+    # inflation,
+    # retailSales,
+    # consumerSentiment,
+    # durableGoods,
+    # unemploymentRate,
+    # totalNonfarmPayroll,
+    # initialClaims,
+    # industrialProductionTotalIndex,
+    # newPrivatelyOwnedHousingUnitsStartedTotalUnits,
+    # totalVehicleSales,
+    # retailMoneyFunds,
+    # smoothedUSRecessionProbabilities,
+    # 3MonthOr90DayRatesAndYieldsCertificatesOfDeposit,
+    # commercialBankInterestRateOnCreditCardPlansAllAccounts,
+    # 30YearFixedRateMortgageAverage,
+    # 15YearFixedRateMortgageAverage
+  
+  output$ecn <- renderPlotly({
+    for (i in c(
+      'realGDP',
+      'realGDPPerCapita',
+      'CPI',
+      'inflation',
+      'consumerSentiment',
+      'unemploymentRate',
+      '15YearFixedRateMortgageAverage',
+      'retailSales'
+    )) {
+      tmp <- general.APIcall(endpoint = 'Econ', symbol = i) %>% mutate(Indicator = i)
+      
+      if (exists("d_")) {
+        d_ <- rbind(d_, tmp)
+      } else {
+        d_ <- tmp
+      }
+    }
+    
+    d_ <- d_ %>% mutate(date = as.Date(date), 
+                        value = round(value, 2),
+                        Indicator = case_when(
+                          Indicator == 'realGDP' ~ 'Real Gross Domestic Product',
+                          Indicator == 'realGDPPerCapita' ~ 'Real GDP Per Capita',
+                          Indicator == 'CPI' ~ 'Consumer Price Index',
+                          Indicator == 'inflation' ~ 'Inflation Rate',
+                          Indicator == 'consumerSentiment' ~ 'Consumer Sentiment Index',
+                          Indicator == 'unemploymentRate' ~ 'Unemployment Rate',
+                          Indicator == '15YearFixedRateMortgageAverage' ~ '15-Year Fixed Rate Mortgage Average',
+                          Indicator == 'retailSales' ~ 'Retail Sales',
+                          TRUE ~ Indicator  # Keep original if no match
+                        ))
+    
+    
+    ggplotly(
+      d_ %>% ggplot() +
+        # geom_area(aes(x = date, y = close, ymin = 10000), alpha = 0.15) +
+        # geom_ribbon(aes(x = date, ymin = mn_ * .97, ymax = close), alpha = 0.15) + #, fill = '#56CC9D'
+        geom_line(aes(x = date, y = value)) + #, colour = '#FF7851'
+        scale_x_date(date_labels = "%Y-%m") +
+        facet_wrap(vars(Indicator), ncol = 2, scales = 'free_y') +
+        scale_y_continuous(labels = scales::label_number(scale = 1e-3)) +
+        labs(x = '', y = '') +
+        theme_minimal() + 
+        theme(
+          panel.spacing.x = unit(-0.5, "cm"),
+          panel.spacing.y = unit(1, "cm"),
+          axis.text = element_text(face = "bold", size = 10),
+          # plot.title = element_text(face = "bold", size = 20, hjust = 0.5, margin = margin(t = 10, b = 10)),
+          strip.text.x = element_text(face = "bold", size = 12, margin = margin(t = 10, r = 0, b = 10, l = 0))
+        )
+    ) %>% style(hoverinfo = "none", traces = 1)
+    
+    
+  })
+  
+  
+  #### markets ----
+  
+  output$mrkts <- renderPlotly({
+    d_ <- rbind(req(eur50()) %>% mutate(Index = "^STOXX50E"), 
+                req(jpn()) %>% mutate(Index = "^N225"), 
+                req(sp5()) %>% filter(date >= Sys.Date() - 90) %>% mutate(Index = "^GSPC"), 
+                req(chn()) %>% mutate(Index = "^HSI"))
+    mins_ <- d_ %>% group_by(Index) %>% summarise(mn_ = min(close))
+    d_ <- d_ %>% left_join(mins_, by = "Index")
+    
+    d_ <- d_ %>%
+      mutate(Index = case_when(
+        Index == '^STOXX50E' ~ 'EURO STOXX 50',
+        Index == '^N225' ~ 'Nikkei 225',
+        Index == '^GSPC' ~ 'S&P 500',
+        Index == '^HSI' ~ 'Hang Seng Index',
+        TRUE ~ Index  # Keep original if no match
+      ))
+    
+    ggplotly(
+      d_ %>% ggplot() +
+      # geom_area(aes(x = date, y = close, ymin = 10000), alpha = 0.15) +
+        geom_ribbon(aes(x = date, ymin = mn_ * .97, ymax = close), alpha = 0.15) + #, fill = '#56CC9D'
+      geom_line(aes(x = date, y = close)) + #, colour = '#FF7851'
+      scale_x_date(date_labels = "%m-%d") +
+      facet_wrap(vars(Index), ncol = 2, scales = 'free_y') +
+      scale_y_continuous(labels = scales::label_number(scale = 1e-3, suffix = "K")) +
+      labs(x = '', y = '') +
+      theme_minimal() + 
+        theme(
+          panel.spacing.x = unit(-0.5, "cm"),
+          panel.spacing.y = unit(1, "cm"),
+          axis.text = element_text(face = "bold", size = 10),
+          # plot.title = element_text(face = "bold", size = 20, hjust = 0.5, margin = margin(t = 10, b = 10)),
+          strip.text.x = element_text(face = "bold", size = 12, margin = margin(t = 10, r = 0, b = 10, l = 0))
+        )
+    ) %>% style(hoverinfo = "none", traces = 1)
+  })
+  
+  
+  #### press  ----
+  
+  output$prssRls <- renderUI({
+    d_ <- general.APIcall(endpoint = "Press-Release")
+    
+    lapply(1:(min(30, nrow(d_))), function(i) {
+      create_news_container(
+        type = "Press-Release",
+        symbol = d_$symbol[i],
+        date = d_$date[i],
+        title = d_$title[i],
+        text = d_$text[i]
+      )
+    }
+    )
+  })
 
+  #### news ----
+  output$nws <- renderUI({
+    d_ <- general.APIcall(endpoint = "News") %>% filter(site != "ndtv.com")
+
+    lapply(1:(min(30, nrow(d_))), function(i) {
+      create_news_container(
+        type = "News",
+        publishedDate = d_$publishedDate[i],
+        title = d_$title[i],
+        image = d_$image[i],
+        site = d_$site[i],
+        text = d_$text[i],
+        url = d_$url[i]
+      )
+    }
+    )
+  })
+  
+  
   observeEvent(input$mstrSmblBtn, {
+    
+    if (input$navbar == "Intro") {
+      updateTabsetPanel(session, "navbar", selected = "General")
+    }
     
     #### data ----
     
@@ -588,6 +985,44 @@ server <- function(input, output, session) {
     
     
     
+    
+    
+    
+    #### stock news ---- 
+    output$stkNws <- renderUI({
+      d_ <- general.APIcall(endpoint = "News-Stock", symbol = i_mstrSmbl()) %>% filter(site != "fool.com")
+      
+      lapply(1:(min(6, nrow(d_))), function(i) {
+        create_news_container(
+          type = "News",
+          publishedDate = d_$publishedDate[i],
+          title = d_$title[i],
+          image = d_$image[i],
+          site = d_$site[i],
+          text = d_$text[i],
+          url = d_$url[i]
+        )
+      }
+      )
+      
+    })
+      
+      #### stock press ---- 
+      output$stkPrs <- renderUI({
+        d_ <- general.APIcall(endpoint = "Press-Release-Stock", symbol = i_mstrSmbl()) #%>% filter(site != "fool.com")
+        
+        lapply(1:(min(6, nrow(d_))), function(i) {
+          create_news_container(
+            type = "Press-Release",
+            symbol = d_$symbol[i],
+            date = d_$date[i],
+            title = d_$title[i],
+            text = d_$text[i]
+          )
+        }
+        )
+        })
+    
     #### stock snapshot ----
     
     output$fnnclSmmry <- renderText({
@@ -711,14 +1146,60 @@ server <- function(input, output, session) {
           buttonwidth = 80
         )
       )
+      
+      d_ <- req(stkPrc()) %>%
+        mutate(calendarYear = as.Date(paste0(format(date, "%Y"), "-12-31")))
+      
+      i_tr <- general.APIcall(endpoint = "Insider-Trans", symbol = i_mstrSmbl()) %>%
+        group_by(year) %>%
+        summarise(
+          purchases = sum(purchases),
+          sales = sum(sales),
+          quarters = dplyr::n_distinct(quarter),
+          totalBought = sum(totalBought),
+          totalSold = sum(totalSold),
+          total_pPurchases = sum(pPurchases),
+          total_sSales = sum(sSales)
+        ) %>% mutate(calendarYear = as.Date(paste0(year, "-12-31")),
+                     buySellRatio = totalBought / totalSold)
+      
+      d_ <- d_ %>% left_join(i_tr, by = "calendarYear") %>% group_by(calendarYear) %>% mutate(y_ = last(close)) %>% ungroup()
 
       ggplotly(
-        req(stkPrc()) %>% ggplot() +
-          geom_area(aes(x = date, y = close), alpha = 0.15) +
-          geom_line(aes(x = date, y = close)) +
-          scale_y_continuous(labels = scales::dollar_format()) +
+        d_ %>% ggplot() +
+          geom_area(aes(x = date, y = close), fill = '#56CC9D', alpha = 0.05) +
+          geom_line(aes(x = date, y = close), colour = '#56CC9D') +
+          geom_point(
+            aes(
+              x = calendarYear,
+              y = y_,
+              text = paste(
+                "Insider Trading",
+                "\nbuySellRatio: ",
+                as.character(round(buySellRatio, 2)),
+                "\npurchases: ",
+                as.character(scales::comma(purchases)),
+                "\nsales",
+                as.character(scales::comma(sales)),
+                "\nquarters: ",
+                as.character(quarters),
+                '\ntotal bought: ',
+                as.character(scales::comma(totalBought)),
+                '\nTotal Sold: ',
+                as.character(scales::comma(totalSold)),
+                '\nTotal pPurchases: ',
+                as.character(scales::comma(total_pPurchases)),
+                '\nTotal sSales: ',
+                as.character(scales::comma(total_sSales))
+            )
+          ),
+          show.legend = FALSE,
+          colour = '#FF7851'
+          ) +
+          scale_y_continuous(labels = scales::label_number_auto()) +
           labs(x = '', y = '') +
           theme_minimal()
+        # tooltip = c('text')
       ) %>% layout(updatemenus = updatemenus
       #              title = list(
       #   text = "Price History",
@@ -1116,10 +1597,10 @@ server <- function(input, output, session) {
       )
       
       ggplotly(pr_2 %>% ggplot() + geom_line(aes(
-        x = date, y = returnVsMarket, col = symbol
-      )) + geom_hline(
+        x = date, y = returnVsMarket
+      ), col = '#FF7851') + geom_hline(
         yintercept = 1,
-        col = 'red',
+        col = '#56CC9D',
         alpha = 0.5,
         linetype = 'dashed'
       ) + labs(title = "Performance vs. SP500") + theme_minimal()

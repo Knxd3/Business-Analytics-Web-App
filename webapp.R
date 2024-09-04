@@ -10,7 +10,10 @@ library(openai)
 library(lubridate)
 library(Cairo)
 library(bslib)
-# library(thematic)
+library(shinyauthr)
+library(RSQLite)
+library(sodium)
+library(thematic)
 
 # load API keys
 fmpc_set_token(Sys.getenv("API_FMPC"))
@@ -23,7 +26,7 @@ options(
   dpi = 300,
   scipen = 999
 )
-# thematic_shiny(font = "auto")
+thematic_shiny(font = "auto")
 
 # load functions
 source('webfunctions.R')
@@ -34,10 +37,28 @@ source('webfunctions.R')
 
 autosuggest_ <- read.csv('www/availab_symbols.csv') %>% pull(x)
 
+
 #### shiny UI ----
-ui <- navbarPage(
+ui <- fluidPage(
   
-  includeCSS("www/styles.css"),
+  tags$head(
+    tags$style(HTML("
+      @media (min-width: 1340px) {
+        .navbar-nav {
+          width: 100%;
+        }
+        .navbar-nav > li:nth-child(9) {
+          margin-left: auto;
+        }
+      }
+      .navbar-nav > li:nth-child(9) > a {
+        color: red !important;
+      }
+      .dashboard-box { border: 1px solid #ddd; padding: 20px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); background-color: #f9f9f9; } .dashboard-box-content { display: flex; flex-direction: column; height: 100%; } .dashboard-box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; } .dashboard-box-title { margin: 0; color: #333; font-weight: 600; font-size: 1.5em; } .dashboard-info-button { background: none; border: none; color: #007bff; font-size: 18px; cursor: pointer; } .dashboard-plot-container { flex: 1; background-color: white; border-radius: 5px; padding: 15px; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); } .ncontainer { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex; } .n-content { flex: 1; } .custom-container { width: 100%; background-color: #fcfcfc; /* Light gray background */ padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Bottom shade */ margin-bottom: 20px; } .news-content { overflow: hidden; /* Prevent overflow */ text-overflow: ellipsis; /* Add ellipsis for overflowed text */ white-space: normal; /* Allow text to wrap */ }
+    "))
+  ),
+  
+  navbarPage(
   
   id = "navbar",
   theme = bs_theme(bootswatch = "minty"),
@@ -64,10 +85,12 @@ ui <- navbarPage(
   #        actionButton('mstrSmblBtn', 'Search'))
   # ),
   
-  header = fluidRow(
+  header = div(
+    class = "custom-container",
+    fluidRow(
     column(
       width = 4,
-      offset = 0,
+      offset = 4,
       style = "margin-left: 5px; margin-top: 10px;",
       
       selectizeInput(
@@ -95,18 +118,23 @@ ui <- navbarPage(
         style = "padding: 10px; font-size: 16px; border-radius: 5px; border: none; cursor: pointer;"
       )
     )
+  )
   ),
   
   
   footer = tagList(
+    
     div(class = "footer",
         "© 2024 My App. All rights reserved.",
         tags$a(href = "#href", "Visit the substack.")
+        
     )
   ),
   
   #### tab intro ----
   tabPanel(title = "Intro",
+           div(
+             
            fluidRow(column(width = 10, offset = 1,
   #### econ/markets ----
                            # verticalLayout(
@@ -134,27 +162,33 @@ ui <- navbarPage(
         class = "dashboard-box-content",
         div(
           class = "dashboard-box-header",
-          h4(class = "dashboard-box-title", 'Economic Indicators'),
-          actionButton("info_ecn", "ℹ️", class = "dashboard-info-button")
+          h4(class = "dashboard-box-title", 'Global Market Index'),
+          actionButton("info_mrkts", "ℹ️", class = "dashboard-info-button")
         ),
         div(
           class = "dashboard-plot-container",
-          plotlyOutput('ecn', height = '950px')
+          plotlyOutput('mrkts', height = '350px')
         )
       )
-    ),
+    )
+    )
+  )
+  )
+  ),
+  fluidRow(column(width = 10, offset =1,
+                  verticalLayout(
     div(
       class = "dashboard-box",
       div(
         class = "dashboard-box-content",
         div(
           class = "dashboard-box-header",
-          h4(class = "dashboard-box-title", 'Global Market Index'),
-          actionButton("info_mrkts", "ℹ️", class = "dashboard-info-button")
+          h4(class = "dashboard-box-title", 'Economic Indicators'),
+          actionButton("info_ecn", "ℹ️", class = "dashboard-info-button")
         ),
         div(
           class = "dashboard-plot-container",
-          plotlyOutput('mrkts', height = '450px')
+          plotlyOutput('ecn', height = '950px')
         )
       )
     )
@@ -175,7 +209,7 @@ ui <- navbarPage(
 
   #### tab general ----
   tabPanel(title = 'General',
-           fluidRow(column(width = 6, style = "padding: 25px; padding-top: 5px;", 
+           fluidRow(column(width = 4, style = "padding: 25px; padding-top: 5px;", 
                            verticalLayout(
                              tabsetPanel(type = "tabs",
                                          tabPanel("News", uiOutput('stkNws')),
@@ -185,7 +219,7 @@ ui <- navbarPage(
                              
                            )
                            ),
-                    column(width = 6, style = "padding: 25px; padding-top: 5px;",
+                    column(width = 8, style = "padding: 25px; padding-top: 5px;",
                            verticalLayout(
                              div(class = "ncontainer",
                                  div(class = "n-content",
@@ -332,9 +366,20 @@ ui <- navbarPage(
                column(width = 12, offset = 0, style = "align: center;",
                       div(class = "ncontainer",
                           div(class = "n-content",
-                              DTOutput('stkFndmntlsTbl',
-                                       width = "95vw",
-                                       height = "700px")
+                              # DTOutput('stkFndmntlsTbl',
+                              #          width = "95vw",
+                              #          height = "700px")
+                              tabsetPanel(type = "tabs",
+                                          tabPanel("Income", DTOutput('stkInc_',
+                                                                     width = "95vw",
+                                                                     height = "700px")),
+                                          tabPanel("Balance", DTOutput('stkBal_',
+                                                                     width = "95vw",
+                                                                     height = "700px")),
+                                          tabPanel("Cash Flow", DTOutput('stkCF_',
+                                                                       width = "95vw",
+                                                                       height = "700px"))
+                                          )
                           )
                       )
                )
@@ -507,6 +552,8 @@ tabPanel(title = "Capital Allocation",
            ),
            mainPanel(
              verticalLayout(
+               div(class = "ncontainer",
+                   div(class = "n-content",
                column(width = 12,
                       style = "display: flex; flex-direction: column; align-items: center;",
                       plotlyOutput('cptlAllctn', 
@@ -514,6 +561,8 @@ tabPanel(title = "Capital Allocation",
                                    height = "650px")
                
              )
+                   )
+               )
            )
            
          )
@@ -542,7 +591,11 @@ tabPanel(title = "Transcripts",
            ),
            mainPanel(
              verticalLayout(
+               div(class = "ncontainer",
+                   div(class = "n-content",
                uiOutput('trnscrpt'),
+                   )
+               )
              )
            )
            
@@ -562,9 +615,50 @@ tabPanel(title = "Other", fluidRow(
     offset = 0,
     plotlyOutput('sp5Prfmnc')
   )
-))
+)),
+
+#### login ----
+
+tabPanel("Login",
+         fluidPage(
+           shinyauthr::loginUI(
+             "login",
+             additional_ui = tags$div(
+               style = "margin-top: 20px;",
+               actionButton("register", "Register", class = "btn btn-danger")
+             )
+             
+           ),
+           
+           shinyauthr::logoutUI(class = "pull-right", id = "logout")
+           
+         )),
+
+# tags$head(
+#   tags$style(HTML("
+#       .navbar-nav {
+#         width: 100%;
+#       }
+#       .navbar-nav > li:nth-child(10) {
+#         float: right;
+#       }
+#       .navbar-nav > li:nth-child(10) > a {
+#         color: red !important;
+#       }
+#     "))
+# )
+
+
+
+# tags$script(
+#   HTML("var header = $('.navbar > .container-fluid');
+#                               header.append('<div style=\"float:right; padding-top: 8px\"><button id=\"signin\" type=\"button\" class=\"btn btn-primary action-button\" onclick=\"signIn()\">Sign In</button></div>')")
+# )
 
 )
+
+)
+
 
 #### shiny server ----
 server <- function(input, output, session) {
@@ -583,6 +677,9 @@ server <- function(input, output, session) {
   stkCf <- reactiveVal(NULL)
   stkFDta <- reactiveVal(NULL)
   stkFdmntlsLng <- reactiveVal(NULL)
+  stkInc <- reactiveVal(NULL)
+  stkBal <- reactiveVal(NULL)
+  stkCF <- reactiveVal(NULL)
   
   sp5 <- reactive({
     # market history
@@ -624,12 +721,20 @@ server <- function(input, output, session) {
     fmpc_price_history(symbols = "^STOXX50E", startDate = Sys.Date() - 90) %>% select(symbol, date, close)
   })
   
-  jpn <- reactive({
-    fmpc_price_history(symbols = "^N225", startDate = Sys.Date() - 90) %>% select(symbol, date, close)
-  })
+  # jpn <- reactive({
+  #   fmpc_price_history(symbols = "^N225", startDate = Sys.Date() - 90) %>% select(symbol, date, close)
+  # })
   
   chn <- reactive({
     fmpc_price_history(symbols = "^HSI", startDate = Sys.Date() - 90) %>% select(symbol, date, close)
+  })
+  
+  # ftse <- reactive({
+  #   fmpc_price_history(symbols = "^FTSE", startDate = Sys.Date() - 90) %>% select(symbol, date, close)
+  # })
+  # 
+  asx <- reactive({
+    fmpc_price_history(symbols = "^AXJO", startDate = Sys.Date() - 90) %>% select(symbol, date, close)
   })
   
   
@@ -673,14 +778,17 @@ server <- function(input, output, session) {
     # 15YearFixedRateMortgageAverage
   
   output$ecn <- renderPlotly({
+    
     for (i in c(
       'realGDP',
       'realGDPPerCapita',
+      'federalFunds',
       'CPI',
       'inflation',
       'consumerSentiment',
       'unemploymentRate',
-      '15YearFixedRateMortgageAverage',
+      'commercialBankInterestRateOnCreditCardPlansAllAccounts',
+      '30YearFixedRateMortgageAverage',
       'retailSales'
     )) {
       tmp <- general.APIcall(endpoint = 'Econ', symbol = i) %>% mutate(Indicator = i)
@@ -695,14 +803,16 @@ server <- function(input, output, session) {
     d_ <- d_ %>% mutate(date = as.Date(date), 
                         value = round(value, 2),
                         Indicator = case_when(
-                          Indicator == 'realGDP' ~ 'Real Gross Domestic Product',
-                          Indicator == 'realGDPPerCapita' ~ 'Real GDP Per Capita',
+                          Indicator == 'realGDP' ~ 'Real Gross Domestic Product (USD)',
+                          Indicator == 'realGDPPerCapita' ~ 'Real GDP Per Capita (USD)',
+                          Indicator == 'federalFunds' ~ 'Federal Fund Rate (%)',
                           Indicator == 'CPI' ~ 'Consumer Price Index',
-                          Indicator == 'inflation' ~ 'Inflation Rate',
+                          Indicator == 'inflation' ~ 'Inflation Rate (%)',
                           Indicator == 'consumerSentiment' ~ 'Consumer Sentiment Index',
-                          Indicator == 'unemploymentRate' ~ 'Unemployment Rate',
-                          Indicator == '15YearFixedRateMortgageAverage' ~ '15-Year Fixed Rate Mortgage Average',
+                          Indicator == 'unemploymentRate' ~ 'Unemployment Rate (%)',
+                          Indicator == '30YearFixedRateMortgageAverage' ~ '30-Year Fixed Rate Mortgage Average (%)',
                           Indicator == 'retailSales' ~ 'Retail Sales',
+                          Indicator == 'commercialBankInterestRateOnCreditCardPlansAllAccounts' ~ 'Commercial Credit Card Bank Interest (%)',
                           TRUE ~ Indicator  # Keep original if no match
                         ))
     
@@ -714,17 +824,17 @@ server <- function(input, output, session) {
         geom_line(aes(x = date, y = value)) + #, colour = '#FF7851'
         scale_x_date(date_labels = "%Y-%m") +
         facet_wrap(vars(Indicator), ncol = 2, scales = 'free_y') +
-        scale_y_continuous(labels = scales::label_number(scale = 1e-3)) +
+        scale_y_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale())) + #scales::label_number(scale = 1e-3)) +
         labs(x = '', y = '') +
         theme_minimal() + 
         theme(
-          panel.spacing.x = unit(-0.5, "cm"),
-          panel.spacing.y = unit(1, "cm"),
+          panel.spacing.x = unit(-1, "lines"),
+          # panel.spacing.y = unit(1, "cm"),
           axis.text = element_text(face = "bold", size = 10),
           # plot.title = element_text(face = "bold", size = 20, hjust = 0.5, margin = margin(t = 10, b = 10)),
           strip.text.x = element_text(face = "bold", size = 12, margin = margin(t = 10, r = 0, b = 10, l = 0))
         )
-    ) %>% style(hoverinfo = "none", traces = 1)
+    )
     
     
   })
@@ -734,7 +844,8 @@ server <- function(input, output, session) {
   
   output$mrkts <- renderPlotly({
     d_ <- rbind(req(eur50()) %>% mutate(Index = "^STOXX50E"), 
-                req(jpn()) %>% mutate(Index = "^N225"), 
+                # req(jpn()) %>% mutate(Index = "^N225"),
+                req(asx()) %>% mutate(Index = "^AXJO"),
                 req(sp5()) %>% filter(date >= Sys.Date() - 90) %>% mutate(Index = "^GSPC"), 
                 req(chn()) %>% mutate(Index = "^HSI"))
     mins_ <- d_ %>% group_by(Index) %>% summarise(mn_ = min(close))
@@ -744,6 +855,7 @@ server <- function(input, output, session) {
       mutate(Index = case_when(
         Index == '^STOXX50E' ~ 'EURO STOXX 50',
         Index == '^N225' ~ 'Nikkei 225',
+        Index == "^AXJO" ~ "AUS 200",
         Index == '^GSPC' ~ 'S&P 500',
         Index == '^HSI' ~ 'Hang Seng Index',
         TRUE ~ Index  # Keep original if no match
@@ -752,7 +864,7 @@ server <- function(input, output, session) {
     ggplotly(
       d_ %>% ggplot() +
       # geom_area(aes(x = date, y = close, ymin = 10000), alpha = 0.15) +
-        geom_ribbon(aes(x = date, ymin = mn_ * .97, ymax = close), alpha = 0.15) + #, fill = '#56CC9D'
+        geom_ribbon(aes(x = date, ymin = mn_ * .99, ymax = close), alpha = 0.15) + #, fill = '#56CC9D'
       geom_line(aes(x = date, y = close)) + #, colour = '#FF7851'
       scale_x_date(date_labels = "%m-%d") +
       facet_wrap(vars(Index), ncol = 2, scales = 'free_y') +
@@ -760,7 +872,7 @@ server <- function(input, output, session) {
       labs(x = '', y = '') +
       theme_minimal() + 
         theme(
-          panel.spacing.x = unit(-0.5, "cm"),
+          panel.spacing.x = unit(-1, "lines"),
           panel.spacing.y = unit(1, "cm"),
           axis.text = element_text(face = "bold", size = 10),
           # plot.title = element_text(face = "bold", size = 20, hjust = 0.5, margin = margin(t = 10, b = 10)),
@@ -806,7 +918,97 @@ server <- function(input, output, session) {
   })
   
   
+  #### login ----
+  
+  
+  conn <- dbConnect(RSQLite::SQLite(), dbname = "users.sqlite")
+  credentials <- shinyauthr::loginServer(
+    id = "login",
+    data = dbGetQuery(conn, "SELECT * FROM users"),
+    user_col = "email",
+    pwd_col = "password",
+    sodium_hashed = TRUE,
+    log_out = reactive(logout_init())
+  )
+  
+  # Logout to hide
+  logout_init <- shinyauthr::logoutServer(
+    id = "logout",
+    active = reactive(credentials()$user_auth)
+  )
+  
+  
+  
+  observeEvent(input$register, {
+    
+    # Logic to handle registration, such as showing a modal or navigating to a registration page
+    showModal(modalDialog(
+      title = "Register",
+      textInput("new_user", "Email:"),
+      passwordInput("new_password", "Password:", placeholder = ""),
+      textOutput('register_message'),
+      footer = tagList(
+        # modalButton("Cancel"),
+        actionButton("cancel_button", "Cancel"),
+        actionButton("submit_registration", "Register")
+      )
+    ))
+  })
+  
+  observeEvent(input$cancel_button, {
+    # Clear the input fields
+    updateTextInput(session, "new_user", value = "")
+    updateTextInput(session, "new_password", value = "")
+    
+    # Clear the output message
+    output$register_message <- renderText("")
+    
+    # Close the modal
+    removeModal()
+  })
+  
+  observeEvent(input$submit_registration, {
+    new_user <- input$new_user
+    new_password <- input$new_password
+    
+    existing_users <- dbGetQuery(conn, "SELECT email from users")
+    if (new_user %in% existing_users$email) {
+      output$register_message <- renderText("Username already exists. Please choose another.") 
+    }
+    
+    else if (!grepl("@", new_user) | !grepl("\\.", new_user)) {
+      output$register_message <- renderText("Please enter a valid e-mail address.")
+    }
+    
+    
+    else if (nchar(new_password) <= 5 |
+             !grepl("\\d", new_password) |
+             !grepl("[a-z]", new_password) |
+             !grepl("[A-Z]", new_password) | 
+             !grepl("\\W", new_password)) {
+      
+      output$register_message <- renderText(
+        "Password must be longer than five characters and have at least one digit, one upper-case letter, one lower-case letter and one special character."
+      )
+    }
+    
+    else {
+      hashed_pass <- password_store(new_password)
+      # Insert new user into the database
+      dbExecute(conn, "INSERT INTO users (email, password) VALUES (?, ?)",
+                params = list(new_user, hashed_pass))
+      output$register_message <- renderText("Registration successful! You can now log in.")
+      
+      updateTextInput(session, "new_user", value = "")
+      updateTextInput(session, "new_password", value = "")
+      
+    }
+  })
+  
+  
   observeEvent(input$mstrSmblBtn, {
+    
+    # print(credentials()$info)
     
     if (input$navbar == "Intro") {
       updateTabsetPanel(session, "navbar", selected = "General")
@@ -955,6 +1157,9 @@ server <- function(input, output, session) {
     stkPrc(dt_1)
     stkFDta(f_dt)
     stkFdmntlsLng(dt_5)
+    stkInc(dt_2)
+    stkBal(dt_3)
+    stkCF(dt_4)
     
     
     stkMdlRctv <- reactive({
@@ -1147,10 +1352,17 @@ server <- function(input, output, session) {
         )
       )
       
+      # prm_user <- credentials()$info$premium
+      # print(prm_user)
+      # 
       d_ <- req(stkPrc()) %>%
         mutate(calendarYear = as.Date(paste0(format(date, "%Y"), "-12-31")))
       
-      i_tr <- general.APIcall(endpoint = "Insider-Trans", symbol = i_mstrSmbl()) %>%
+      i_tr <- as.data.frame(general.APIcall(endpoint = "Insider-Trans", symbol = i_mstrSmbl()) )
+      
+      
+      if (nrow(i_tr) != 0) {
+      i_tr <- i_tr %>%
         group_by(year) %>%
         summarise(
           purchases = sum(purchases),
@@ -1162,6 +1374,20 @@ server <- function(input, output, session) {
           total_sSales = sum(sSales)
         ) %>% mutate(calendarYear = as.Date(paste0(year, "-12-31")),
                      buySellRatio = totalBought / totalSold)
+      } else {
+        i_tr <- data.frame(
+          purchases = 0,
+          sales = 0,
+          quarters = 0,
+          totalBought = 0,
+          totalSold = 0,
+          total_pPurchases = 0,
+          total_sSales = 0,
+          year = "2024"
+        ) %>% mutate(calendarYear = as.Date(paste0(year, "-12-31")),
+                                       buySellRatio = totalBought / totalSold)
+      }
+      
       
       d_ <- d_ %>% left_join(i_tr, by = "calendarYear") %>% group_by(calendarYear) %>% mutate(y_ = last(close)) %>% ungroup()
 
@@ -1213,7 +1439,7 @@ server <- function(input, output, session) {
 
 
     })
-
+    
 
     #### fundamentals chart ----
     
@@ -1295,20 +1521,69 @@ server <- function(input, output, session) {
     
     #### fundamentals table ----
     
-    output$stkFndmntlsTbl <- renderDT({
-      datatable(req(stkFDta()) %>% filter(calendarYear >= 2018) %>%
-                mutate(across(!contains(c('ratio', 'calendarYear', 'Ratio', 'average', 
-                                          'otherAssets', 'otherWorkingCapital', 'otherInvestingActivites')) & where(is.numeric), ~scales::label_number(scale_cut = scales::cut_short_scale())(.x))),
+    # output$stkFndmntlsTbl <- renderDT({
+    #   datatable(req(stkFDta()) %>% filter(calendarYear >= 2018), #%>%
+    #             #mutate(across(!contains(c('ratio', 'calendarYear', 'Ratio', 'average')) & where(is.numeric), ~scales::comma()(.x))),  #~scales::label_number(scale_cut = scales::cut_short_scale())(.x))),
+    #             filter = "top",
+    #             options = list(
+    #               pageLength = 10,
+    #               autoWidth = TRUE,
+    #               scrollX = TRUE,
+    #               dom = 'Bfrtip',  # Adds buttons for copy, csv, excel, etc.
+    #               buttons = c('copy', 'csv', 'excel')
+    #             ),
+    #             extensions = 'Buttons',
+    #             class = "cell-border stripe hover"  # Adds styling to the table
+    #   )
+    # })
+    
+    #### fundamentals tbl tabsetPanel ----
+    
+    output$stkInc_ <- renderDT({
+      datatable(req(stkInc()) %>% filter(calendarYear >= 2018) %>%
+                  mutate(across(where(is.numeric), ~custom_number_format(.x, decimals = 2))),
                 filter = "top",
                 options = list(
                   pageLength = 10,
                   autoWidth = TRUE,
                   scrollX = TRUE,
-                  dom = 'Bfrtip',  # Adds buttons for copy, csv, excel, etc.
+                  dom = 'Bfrtip',
                   buttons = c('copy', 'csv', 'excel')
                 ),
                 extensions = 'Buttons',
-                class = "cell-border stripe hover"  # Adds styling to the table
+                class = 'cell-border stripe hover'
+      )
+    })
+    
+    output$stkBal_ <- renderDT({
+      datatable(req(stkBal()) %>% filter(calendarYear >= 2018) %>%
+                  mutate(across(where(is.numeric), ~custom_number_format(.x, decimals = 2))),
+                filter = "top",
+                options = list(
+                  pageLength = 10,
+                  autoWidth = TRUE,
+                  scrollX = TRUE,
+                  dom = 'Bfrtip',
+                  buttons = c('copy', 'csv', 'excel')
+                ),
+                extensions = 'Buttons',
+                class = 'cell-border stripe hover'
+      )
+    })
+    
+    output$stkCF_ <- renderDT({
+      datatable(req(stkCF()) %>% filter(calendarYear >= 2018) %>%
+                mutate(across(where(is.numeric), ~custom_number_format(.x, decimals = 2))),
+                filter = "top",
+                options = list(
+                  pageLength = 10,
+                  autoWidth = TRUE,
+                  scrollX = TRUE,
+                  dom = 'Bfrtip',
+                  buttons = c('copy', 'csv', 'excel')
+                ),
+                extensions = 'Buttons',
+                class = 'cell-border stripe hover'
       )
     })
     
@@ -1481,7 +1756,7 @@ server <- function(input, output, session) {
       
       ggplotly(
       vltn_d %>% filter(Legend %in% input$i_vltnSldr) %>% ggplot() +
-        geom_line(aes(x = date, y = Value), colour = '#56CC9D', linetype = 'dashed', alpha = 0.7) +
+        geom_line(aes(x = date, y = Value), colour = '#56CC9D', linetype = 'dashed', alpha = 0.5) +
         geom_line(aes(x = date, y = Trend), colour = '#FF7851') +
         # geom_line(aes(x = date, y = Smooth), alpha = 0.5) +
         scale_x_date(date_breaks = '2 years',

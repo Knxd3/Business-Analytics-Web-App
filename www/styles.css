@@ -55,3 +55,19 @@
 .n-content {
     flex: 1;
 }
+
+.custom-container {
+  width: 100%;
+  background-color: #fcfcfc; /* Light gray background */
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Bottom shade */
+  margin-bottom: 20px;
+}
+
+
+.news-content {
+  overflow: hidden; /* Prevent overflow */
+  text-overflow: ellipsis; /* Add ellipsis for overflowed text */
+  white-space: normal; /* Allow text to wrap */
+}

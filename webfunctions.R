@@ -88,39 +88,69 @@ create_news_container <- function(symbol, type = "News", date = NA, title = NA, 
  
   
    if (type == "News") {
+     
     
+     div(
+       class = "news-container",
+       style = "border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex; flex-wrap: wrap;",
+       
+       div(
+         class = "news-image",
+         style = "flex: 0 1 150px; margin-right: 15px; margin-bottom: 10px;",
+         img(src = image, alt = title, style = "width: 100%; height: auto; border-radius: 5px;")
+       ),
+       
+       div(
+         class = "news-content",
+         style = "flex: 1;",
+         
+         div(
+           class = "news-header",
+           style = "display: flex; justify-content: space-between; margin-bottom: 10px;",
+           
+           strong(site, style = "font-size: 16px; color: #1a5f7a;"),
+           span(format(as.POSIXct(publishedDate), "%B %d, %Y %H:%M"), style = "color: #666;")
+         ),
+         
+         h5(title, style = "margin-top: 0; margin-bottom: 10px; color: #333;"),
+         
+         p(substr(text, 1, 250), "...", style = "margin: 0 0 10px 0; color: #555;"),
+         
+         a(href = url, "Read more", target = "_blank", 
+           style = "color: #1a5f7a; text-decoration: none; font-weight: bold;")
+       )
+     )
     
-    
-    div(
-      class = "news-container",
-      style = "border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex;",
-      
-      div(
-        class = "news-image",
-        style = "flex: 0 0 150px; margin-right: 15px;",
-        img(src = image, alt = title, style = "width: 100%; height: auto; border-radius: 5px;")
-      ),
-      
-      div(
-        class = "news-content",
-        style = "flex: 1;",
-        
-        div(
-          class = "news-header",
-          style = "display: flex; justify-content: space-between; margin-bottom: 10px;",
-          
-          strong(site, style = "font-size: 16px; color: #1a5f7a;"),
-          span(format(as.POSIXct(publishedDate), "%B %d, %Y %H:%M"), style = "color: #666;")
-        ),
-        
-        h5(title, style = "margin-top: 0; margin-bottom: 10px; color: #333;"),
-        
-        p(substr(text, 1, 250), "...", style = "margin: 0 0 10px 0; color: #555;"),
-        
-        a(href = url, "Read more", target = "_blank", 
-          style = "color: #1a5f7a; text-decoration: none; font-weight: bold;")
-      )
-    )
+    # div(
+    #   class = "news-container",
+    #   style = "border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex;",
+    #   
+    #   div(
+    #     class = "news-image",
+    #     style = "flex: 0 0 150px; margin-right: 15px;",
+    #     img(src = image, alt = title, style = "width: 100%; height: auto; border-radius: 5px;")
+    #   ),
+    #   
+    #   div(
+    #     class = "news-content",
+    #     style = "flex: 1;",
+    #     
+    #     div(
+    #       class = "news-header",
+    #       style = "display: flex; justify-content: space-between; margin-bottom: 10px;",
+    #       
+    #       strong(site, style = "font-size: 16px; color: #1a5f7a;"),
+    #       span(format(as.POSIXct(publishedDate), "%B %d, %Y %H:%M"), style = "color: #666;")
+    #     ),
+    #     
+    #     h5(title, style = "margin-top: 0; margin-bottom: 10px; color: #333;"),
+    #     
+    #     p(substr(text, 1, 250), "...", style = "margin: 0 0 10px 0; color: #555;"),
+    #     
+    #     a(href = url, "Read more", target = "_blank", 
+    #       style = "color: #1a5f7a; text-decoration: none; font-weight: bold;")
+    #   )
+    # )
   }
  
   
@@ -145,4 +175,31 @@ create_news_container <- function(symbol, type = "News", date = NA, title = NA, 
     p(substr(text, 1, 350), style = "margin: 0; color: #555;")
   )
   }
+}
+
+
+custom_number_format <- function(x, 
+                                 threshold_k = 1e3, 
+                                 threshold_m = 1e6, 
+                                 threshold_b = 1e9,
+                                 decimals = 1) {
+  
+  format_number <- function(value) {
+    if (is.na(value)) return(NA_character_)
+    
+    abs_value <- abs(value)
+    sign <- ifelse(value < 0, "-", "")
+    
+    if (abs_value >= threshold_b) {
+      return(paste0(sign, format(round(abs_value / 1e9, decimals), nsmall = decimals), "B"))
+    } else if (abs_value >= threshold_m) {
+      return(paste0(sign, format(round(abs_value / 1e6, decimals), nsmall = decimals), "M"))
+    } else if (abs_value >= threshold_k) {
+      return(paste0(sign, format(round(abs_value / 1e3, decimals), nsmall = decimals), "K"))
+    } else {
+      return(paste0(sign, format(round(abs_value, decimals), nsmall = decimals)))
+    }
+  }
+  
+  sapply(x, format_number)
 }

@@ -50,10 +50,15 @@
     margin-bottom: 20px;
     border-radius: 5px;
     display: flex;
+    flex-direction: column;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .n-content {
     flex: 1;
+    width: 100%;
+    max-width: 100%;
 }
 
 .custom-container {
@@ -71,3 +76,5 @@
   text-overflow: ellipsis; /* Add ellipsis for overflowed text */
   white-space: normal; /* Allow text to wrap */
 }
+
+

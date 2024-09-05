@@ -15,6 +15,7 @@ library(RSQLite)
 library(sodium)
 library(thematic)
 
+
 # load API keys
 fmpc_set_token(Sys.getenv("API_FMPC"))
 Sys.setenv(OPENAI_API_KEY = Sys.getenv("API_OAI"))
@@ -41,6 +42,8 @@ autosuggest_ <- read.csv('www/availab_symbols.csv') %>% pull(x)
 #### shiny UI ----
 ui <- fluidPage(
   
+  shinybrowser::detect(),
+  
   tags$head(
     tags$style(HTML("
       @media (min-width: 1340px) {
@@ -57,6 +60,24 @@ ui <- fluidPage(
       .dashboard-box { border: 1px solid #ddd; padding: 20px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); background-color: #f9f9f9; } .dashboard-box-content { display: flex; flex-direction: column; height: 100%; } .dashboard-box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; } .dashboard-box-title { margin: 0; color: #333; font-weight: 600; font-size: 1.5em; } .dashboard-info-button { background: none; border: none; color: #007bff; font-size: 18px; cursor: pointer; } .dashboard-plot-container { flex: 1; background-color: white; border-radius: 5px; padding: 15px; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); } .ncontainer { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex; } .n-content { flex: 1; } .custom-container { width: 100%; background-color: #fcfcfc; /* Light gray background */ padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Bottom shade */ margin-bottom: 20px; } .news-content { overflow: hidden; /* Prevent overflow */ text-overflow: ellipsis; /* Add ellipsis for overflowed text */ white-space: normal; /* Allow text to wrap */ }
     "))
   ),
+  
+  tags$style(HTML("
+  @media (max-width: 600px) {
+    .news-container {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .news-image {
+      margin-right: 0;
+      margin-bottom: 10px;
+      flex: 0 0 auto; /* Adjust image size if necessary */
+    }
+    .news-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+")),
   
   navbarPage(
   
@@ -136,7 +157,7 @@ ui <- fluidPage(
            div(
              
            fluidRow(column(width = 10, offset = 1,
-  #### econ/markets ----
+  #### econ/markets/cmmdts ----
                            # verticalLayout(
                            #   div(
                            #    style = "border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex;",
@@ -155,47 +176,54 @@ ui <- fluidPage(
                            # )
                            # )
   # more styling
-  verticalLayout(
+  verticalLayout(div(class = "dashboard-box", div(
+    class = "dashboard-box-content",
     div(
-      class = "dashboard-box",
+      class = "dashboard-box-header",
+      h4(class = "dashboard-box-title", 'Global Market Index'),
+      actionButton("info_mrkts", "ℹ️", class = "dashboard-info-button")
+    ),
+    div(
+      class = "dashboard-plot-container",
+      style = "max-width: 900px; width: 100%; margin: 0 auto;",
+      plotlyOutput('mrkts', height = '550px')
+    )
+  )))
+           )
+           )
+           ), 
+  fluidRow(column(width = 10, offset = 1, verticalLayout(div(
+    class = "dashboard-box", div(
+      class = "dashboard-box-content",
       div(
-        class = "dashboard-box-content",
-        div(
-          class = "dashboard-box-header",
-          h4(class = "dashboard-box-title", 'Global Market Index'),
-          actionButton("info_mrkts", "ℹ️", class = "dashboard-info-button")
-        ),
-        div(
-          class = "dashboard-plot-container",
-          plotlyOutput('mrkts', height = '350px')
-        )
+        class = "dashboard-box-header",
+        h4(class = "dashboard-box-title", 'Economic Indicators'),
+        actionButton("info_ecn", "ℹ️", class = "dashboard-info-button")
+      ),
+      div(
+        class = "dashboard-plot-container",
+        style = "max-width: 1200px; width: 100%; margin: 0 auto;",
+        plotlyOutput('ecn', height = '1850px')
       )
     )
-    )
-  )
-  )
-  ),
-  fluidRow(column(width = 10, offset =1,
-                  verticalLayout(
-    div(
-      class = "dashboard-box",
+  ))
+  )), 
+  fluidRow(column(width = 10, offset = 1, verticalLayout(div(
+    class = "dashboard-box", div(
+      class = "dashboard-box-content",
       div(
-        class = "dashboard-box-content",
-        div(
-          class = "dashboard-box-header",
-          h4(class = "dashboard-box-title", 'Economic Indicators'),
-          actionButton("info_ecn", "ℹ️", class = "dashboard-info-button")
-        ),
-        div(
-          class = "dashboard-plot-container",
-          plotlyOutput('ecn', height = '950px')
-        )
+        class = "dashboard-box-header",
+        h4(class = "dashboard-box-title", 'Economic Indicators'),
+        actionButton("info_cmmdts", "ℹ️", class = "dashboard-info-button")
+      ),
+      div(
+        class = "dashboard-plot-container",
+        style = "max-width: 1200px; width: 100%; margin: 0 auto;",
+        plotlyOutput('cmdts', height = '1050px')
       )
     )
-  )
-  
-                           )
-                    ),
+  ))
+  )),
   #### news/press ----
            fluidRow(column(width = 10, offset = 1, 
                        tabsetPanel(type = "tabs",
@@ -209,20 +237,14 @@ ui <- fluidPage(
 
   #### tab general ----
   tabPanel(title = 'General',
-           fluidRow(column(width = 4, style = "padding: 25px; padding-top: 5px;", 
-                           verticalLayout(
-                             tabsetPanel(type = "tabs",
-                                         tabPanel("News", uiOutput('stkNws')),
-                                         tabPanel("Press Release", uiOutput('stkPrs'))
-                                         ),
-                             tableOutput("prfl")
-                             
-                           )
-                           ),
+           
+           fluidRow(
                     column(width = 8, style = "padding: 25px; padding-top: 5px;",
                            verticalLayout(
                              div(class = "ncontainer",
+                                 style = "width: 100%",
                                  div(class = "n-content",
+                                     style = "width: 100%",
                              plotlyOutput('stkP')
                              )
                              ),
@@ -239,7 +261,20 @@ ui <- fluidPage(
                              
                              )
                     ),
-           )
+                    column(width = 4, style = "padding: 25px; padding-top: 5px;", 
+                           verticalLayout(
+                             
+                             tabsetPanel(type = "tabs",
+                                         
+                                         tabPanel("News", uiOutput('stkNws')),
+                                         tabPanel("Press Release", uiOutput('stkPrs'))
+                             ),
+                             tableOutput("prfl")
+                             
+                           )
+                    )
+           ),
+           
            ),
 
   #### tab fundamentals ----
@@ -344,6 +379,7 @@ ui <- fluidPage(
              verticalLayout(
                div(class = "ncontainer",
                    div(class = "n-content",
+                       style = "max-width: 1400px; width: 80%; margin: 0 auto;",
                        plotlyOutput('stkFndmt')
                    )
                )
@@ -355,6 +391,7 @@ ui <- fluidPage(
                column(width = 12, offset = 0, style = "align: center;",
                       div(class = "ncontainer",
                           div(class = "n-content",
+                              
                               plotOutput('stkFndmntlsRltv',
                                          width = "95vw",
                                          height = "700px")
@@ -817,28 +854,30 @@ server <- function(input, output, session) {
                         ))
     
     
-    ggplotly(
-      d_ %>% ggplot() +
+      p <- d_ %>% ggplot() +
         # geom_area(aes(x = date, y = close, ymin = 10000), alpha = 0.15) +
         # geom_ribbon(aes(x = date, ymin = mn_ * .97, ymax = close), alpha = 0.15) + #, fill = '#56CC9D'
         geom_line(aes(x = date, y = value)) + #, colour = '#FF7851'
-        scale_x_date(date_labels = "%Y-%m") +
-        facet_wrap(vars(Indicator), ncol = 2, scales = 'free_y') +
+        scale_x_date(date_labels = "%Y") +
+        facet_wrap(vars(Indicator), ncol = 1, scales = 'free') +
         scale_y_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale())) + #scales::label_number(scale = 1e-3)) +
         labs(x = '', y = '') +
-        theme_minimal() + 
+        theme_minimal() +
         theme(
-          panel.spacing.x = unit(-1, "lines"),
-          # panel.spacing.y = unit(1, "cm"),
+          # panel.spacing.x = unit(-1, "lines"),
+          panel.spacing.y = unit(-0.5, "lines"),
           axis.text = element_text(face = "bold", size = 10),
           # plot.title = element_text(face = "bold", size = 20, hjust = 0.5, margin = margin(t = 10, b = 10)),
           strip.text.x = element_text(face = "bold", size = 12, margin = margin(t = 10, r = 0, b = 10, l = 0))
         )
-    )
-    
-    
+
+      return(ggplotly(p))
+
+
+      
   })
   
+
   
   #### markets ----
   
@@ -867,18 +906,51 @@ server <- function(input, output, session) {
         geom_ribbon(aes(x = date, ymin = mn_ * .99, ymax = close), alpha = 0.15) + #, fill = '#56CC9D'
       geom_line(aes(x = date, y = close)) + #, colour = '#FF7851'
       scale_x_date(date_labels = "%m-%d") +
-      facet_wrap(vars(Index), ncol = 2, scales = 'free_y') +
+      facet_wrap(vars(Index), ncol = 1, scales = 'free') +
       scale_y_continuous(labels = scales::label_number(scale = 1e-3, suffix = "K")) +
       labs(x = '', y = '') +
       theme_minimal() + 
         theme(
-          panel.spacing.x = unit(-1, "lines"),
-          panel.spacing.y = unit(1, "cm"),
+          # panel.spacing.x = unit(-1, "lines"),
+          # panel.spacing.y = unit(-0.5, "lines"),
           axis.text = element_text(face = "bold", size = 10),
           # plot.title = element_text(face = "bold", size = 20, hjust = 0.5, margin = margin(t = 10, b = 10)),
           strip.text.x = element_text(face = "bold", size = 12, margin = margin(t = 10, r = 0, b = 10, l = 0))
         )
     ) %>% style(hoverinfo = "none", traces = 1)
+  })
+  
+  
+  output$cmdts <- renderPlotly({
+    
+    oil <-  general.APIcall(endpoint = "Crude-Oil", symbol = "CLUSD", columns = c("date", "close")) %>% mutate(Commodity = "Crude Oil")
+    gas <- general.APIcall(endpoint = "Nat-Gas", symbol = "NGUSD", columns = c("date", "close")) %>% mutate(Commodity = "Natural Gas")
+    cattle <- general.APIcall(endpoint = "Beef", symbol = "GFUSX", columns = c("date", "close")) %>% mutate(Commodity = "Live Cattle Futures")
+    corn <- general.APIcall(endpoint = "Corn", symbol = "ZCUSX", columns = c("date", "close")) %>% mutate(Commodity = "Corn Futures")
+    
+    d_ <- rbind(oil, gas, cattle, corn) %>% mutate(date = as.Date(date), close = round(close , 2))
+    
+    
+    ggplotly(
+    d_ %>% ggplot() +
+      # # geom_area(aes(x = date, y = close, ymin = 10000), alpha = 0.15) +
+      # geom_ribbon(aes(x = date, ymin = mn_ * .99, ymax = close), alpha = 0.15) + #, fill = '#56CC9D'
+      geom_line(aes(x = date, y = close)) + #, colour = '#FF7851'
+      scale_x_date(date_labels = "%Y") +
+      facet_wrap(vars(Commodity), ncol = 1, scales = 'free') +
+      scale_y_continuous(labels = scales::label_number()) +
+      labs(x = '', y = '') +
+      theme_minimal() + 
+      theme(
+        # panel.spacing.x = unit(-1, "lines"),
+        # panel.spacing.y = unit(-0.5, "lines"),
+        axis.text = element_text(face = "bold", size = 10),
+        # plot.title = element_text(face = "bold", size = 20, hjust = 0.5, margin = margin(t = 10, b = 10)),
+        strip.text.x = element_text(face = "bold", size = 12, margin = margin(t = 10, r = 0, b = 10, l = 0))
+      )
+  ) #%>% style(hoverinfo = "none", traces = 1)
+    
+    
   })
   
   
@@ -1216,6 +1288,23 @@ server <- function(input, output, session) {
       output$stkPrs <- renderUI({
         d_ <- general.APIcall(endpoint = "Press-Release-Stock", symbol = i_mstrSmbl()) #%>% filter(site != "fool.com")
         
+        tags$style(HTML("
+  @media (max-width: 300px) {
+    .news-container {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .news-image {
+      margin-right: 0;
+      margin-bottom: 10px;
+      flex: 0 0 auto; /* Adjust image size if necessary */
+    }
+    .news-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+"))
         lapply(1:(min(6, nrow(d_))), function(i) {
           create_news_container(
             type = "Press-Release",

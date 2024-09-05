@@ -65,8 +65,10 @@ general.APIcall <- function(endpoint, columns = NULL, symbol = NULL) {
     url = paste0("https://financialmodelingprep.com/api/v4/economic?name=", symbol, "&apikey=", Sys.getenv("API_FMPC"))
   } else if (endpoint == "Insider-Trans") {
     url = paste0("https://financialmodelingprep.com/api/v4/insider-roaster-statistic?symbol=", symbol, "&apikey=", Sys.getenv("API_FMPC"))
+  } else if (endpoint %in% c("Crude-Oil", "Nat-Gas", "Beef", "Corn")) {
+    url = paste0("https://financialmodelingprep.com/api/v3/historical-chart/1month/", symbol, "?from=2004-02-10&to=", as.character(Sys.Date()), "&apikey=", Sys.getenv("API_FMPC"))
   }
-
+  
   
   res <- httr::GET(url)
   raw.content <- httr::content(res, as = 'raw')
@@ -76,7 +78,7 @@ general.APIcall <- function(endpoint, columns = NULL, symbol = NULL) {
     content_out <- content_df
   }
   else {
-  content_out <- content_json %>% select(all_of(columns))
+  content_out <- content_df %>% select(all_of(columns))
   }
   return(content_out)
 }
@@ -89,68 +91,43 @@ create_news_container <- function(symbol, type = "News", date = NA, title = NA, 
   
    if (type == "News") {
      
-    
+     
      div(
+      
        class = "news-container",
-       style = "border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex; flex-wrap: wrap;",
-       
+       style = "border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex;",
+
        div(
          class = "news-image",
-         style = "flex: 0 1 150px; margin-right: 15px; margin-bottom: 10px;",
+         style = "flex: 0 0 100px; margin-right: 15px;",
          img(src = image, alt = title, style = "width: 100%; height: auto; border-radius: 5px;")
+         
        ),
-       
+
        div(
          class = "news-content",
          style = "flex: 1;",
-         
+
          div(
            class = "news-header",
            style = "display: flex; justify-content: space-between; margin-bottom: 10px;",
-           
+
            strong(site, style = "font-size: 16px; color: #1a5f7a;"),
            span(format(as.POSIXct(publishedDate), "%B %d, %Y %H:%M"), style = "color: #666;")
          ),
-         
+
          h5(title, style = "margin-top: 0; margin-bottom: 10px; color: #333;"),
-         
+
          p(substr(text, 1, 250), "...", style = "margin: 0 0 10px 0; color: #555;"),
-         
-         a(href = url, "Read more", target = "_blank", 
+
+         a(href = url, "Read more", target = "_blank",
            style = "color: #1a5f7a; text-decoration: none; font-weight: bold;")
        )
+       
      )
-    
-    # div(
-    #   class = "news-container",
-    #   style = "border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex;",
-    #   
-    #   div(
-    #     class = "news-image",
-    #     style = "flex: 0 0 150px; margin-right: 15px;",
-    #     img(src = image, alt = title, style = "width: 100%; height: auto; border-radius: 5px;")
-    #   ),
-    #   
-    #   div(
-    #     class = "news-content",
-    #     style = "flex: 1;",
-    #     
-    #     div(
-    #       class = "news-header",
-    #       style = "display: flex; justify-content: space-between; margin-bottom: 10px;",
-    #       
-    #       strong(site, style = "font-size: 16px; color: #1a5f7a;"),
-    #       span(format(as.POSIXct(publishedDate), "%B %d, %Y %H:%M"), style = "color: #666;")
-    #     ),
-    #     
-    #     h5(title, style = "margin-top: 0; margin-bottom: 10px; color: #333;"),
-    #     
-    #     p(substr(text, 1, 250), "...", style = "margin: 0 0 10px 0; color: #555;"),
-    #     
-    #     a(href = url, "Read more", target = "_blank", 
-    #       style = "color: #1a5f7a; text-decoration: none; font-weight: bold;")
-    #   )
-    # )
+     
+     
+     
   }
  
   

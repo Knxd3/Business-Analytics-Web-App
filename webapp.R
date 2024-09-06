@@ -42,10 +42,11 @@ autosuggest_ <- read.csv('www/availab_symbols.csv') %>% pull(x)
 #### shiny UI ----
 ui <- fluidPage(
   
-  shinybrowser::detect(),
+  # shinybrowser::detect(),
   
-  tags$head(
-    tags$style(HTML("
+
+    tags$head(
+  tags$style(HTML("
       @media (min-width: 1340px) {
         .navbar-nav {
           width: 100%;
@@ -57,12 +58,20 @@ ui <- fluidPage(
       .navbar-nav > li:nth-child(9) > a {
         color: red !important;
       }
-      .dashboard-box { border: 1px solid #ddd; padding: 20px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); background-color: #f9f9f9; } .dashboard-box-content { display: flex; flex-direction: column; height: 100%; } .dashboard-box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; } .dashboard-box-title { margin: 0; color: #333; font-weight: 600; font-size: 1.5em; } .dashboard-info-button { background: none; border: none; color: #007bff; font-size: 18px; cursor: pointer; } .dashboard-plot-container { flex: 1; background-color: white; border-radius: 5px; padding: 15px; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); } .ncontainer { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex; } .n-content { flex: 1; } .custom-container { width: 100%; background-color: #fcfcfc; /* Light gray background */ padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Bottom shade */ margin-bottom: 20px; } .news-content { overflow: hidden; /* Prevent overflow */ text-overflow: ellipsis; /* Add ellipsis for overflowed text */ white-space: normal; /* Allow text to wrap */ }
+      .dashboard-box { border: 1px solid #ddd; padding: 20px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); background-color: #f9f9f9; } 
+      .dashboard-box-content { display: flex; flex-direction: column; height: 100%; } 
+      .dashboard-box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; } 
+      .dashboard-box-title { margin: 0; color: #333; font-weight: 600; font-size: 1.5em; } 
+      .dashboard-info-button { background: none; border: none; color: #007bff; font-size: 18px; cursor: pointer; } 
+      .dashboard-plot-container { flex: 1; background-color: white; border-radius: 5px; padding: 15px; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); } 
+      .ncontainer { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex; } .n-content { flex: 1; } 
+      .custom-container { width: 100%; background-color: #fcfcfc; /* Light gray background */ padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Bottom shade */ margin-bottom: 20px; } 
+      .news-content { overflow: hidden; /* Prevent overflow */ text-overflow: ellipsis; /* Add ellipsis for overflowed text */ white-space: normal; /* Allow text to wrap */ }
     "))
-  ),
-  
-  tags$style(HTML("
-  @media (max-width: 600px) {
+),
+
+tags$style(HTML("
+  @media (max-width: 1000px) {
     .news-container {
       flex-direction: column;
       align-items: flex-start;
@@ -78,37 +87,16 @@ ui <- fluidPage(
     }
   }
 ")),
+
+  
+  
   
   navbarPage(
+    
   
-  id = "navbar",
-  theme = bs_theme(bootswatch = "minty"),
-  collapsible = TRUE, 
-  # title = "Value Quant Investment Platform - v1.0",
-  title = tags$img(src = "logo.png", width = "300px;", style = "margin-right: 5px;"),
-  # header = fluidRow(column(
-  #   width = 4,
-  #   offset = 0,
-  #   style = "margin-left: 5px;",
-  #   selectizeInput(
-  #     inputId = "mstrSmbl",
-  #     label = "Type ticker symbol",
-  #     choices = c('META', 'MSFT', 'GOOG'),
-  #     multiple = FALSE,
-  #     selected = 'META',
-  #     options = list(
-  #       placeholder = "Type...",
-  #       onInitialize = I('function() { this.setValue(""); }')
-  #     ),
-  #     width = '100%'
-  #   )),
-  # column(width = 2, offset = 0, style = "margin-left: 5px; margin-top: 15px; display: flex; align-items: center;",
-  #        actionButton('mstrSmblBtn', 'Search'))
-  # ),
-  
-  header = div(
-    class = "custom-container",
-    fluidRow(
+    id = "navbar", theme = bs_theme(bootswatch = "minty"), collapsible = TRUE, # title = "Value Quant Investment Platform - v1.0",
+    title = tags$img(src = "logo.png", width = "300px;", style = "margin-right: 5px;"), 
+  header = div(class = "custom-container", fluidRow(
     column(
       width = 4,
       offset = 4,
@@ -116,7 +104,8 @@ ui <- fluidPage(
       
       selectizeInput(
         inputId = "mstrSmbl",
-        label = NULL,  # Removed label for a cleaner look
+        label = NULL,
+        # Removed label for a cleaner look
         choices = c('META', 'MSFT', 'GOOG'),
         multiple = FALSE,
         selected = 'META',
@@ -128,6 +117,7 @@ ui <- fluidPage(
         # style = "padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ddd;"
       )
     ),
+    
     column(
       width = 2,
       offset = 0,
@@ -139,42 +129,21 @@ ui <- fluidPage(
         style = "padding: 10px; font-size: 16px; border-radius: 5px; border: none; cursor: pointer;"
       )
     )
-  )
-  ),
+  )), 
   
   
-  footer = tagList(
+  footer = tagList(div(
+    class = "footer",
+    "© 2024 Value Quant Investment.",
+    tags$a(href = "#href", "Visit the substack.")
     
-    div(class = "footer",
-        "© 2024 My App. All rights reserved.",
-        tags$a(href = "#href", "Visit the substack.")
-        
-    )
-  ),
-  
+  )), 
   #### tab intro ----
   tabPanel(title = "Intro",
            div(
              
            fluidRow(column(width = 10, offset = 1,
   #### econ/markets/cmmdts ----
-                           # verticalLayout(
-                           #   div(
-                           #    style = "border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex;",
-                           #    div(style = "flex: 1;",
-                           #    tags$h5('Economic Indicators'),
-                           #    plotlyOutput('ecn',
-                           #                 height = '700px')
-                           #    )
-                           #   ),
-                           # div(
-                           #   style = "border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex;",
-                           #   div(style = "flex: 1;",
-                           #   tags$h5('Global Market Index'),
-                           #   plotlyOutput('mrkts')
-                           #   )
-                           # )
-                           # )
   # more styling
   verticalLayout(div(class = "dashboard-box", div(
     class = "dashboard-box-content",
@@ -206,8 +175,7 @@ ui <- fluidPage(
         plotlyOutput('ecn', height = '1850px')
       )
     )
-  ))
-  )), 
+  )))), 
   fluidRow(column(width = 10, offset = 1, verticalLayout(div(
     class = "dashboard-box", div(
       class = "dashboard-box-content",
@@ -225,58 +193,56 @@ ui <- fluidPage(
   ))
   )),
   #### news/press ----
-           fluidRow(column(width = 10, offset = 1, 
-                       tabsetPanel(type = "tabs",
-                       tabPanel("News", uiOutput("nws")),            
-                       tabPanel("Press Release", uiOutput('prssRls'))
-                       
-                       )
-           )
-           )
-  ),
-
+  fluidRow(column(
+    width = 10,
+    offset = 1,
+    tabsetPanel(
+      type = "tabs",
+      tabPanel("News", uiOutput("nws")),
+      tabPanel("Press Release", uiOutput('prssRls'))
+      
+    )
+  ))
+  ), 
   #### tab general ----
-  tabPanel(title = 'General',
-           
-           fluidRow(
-                    column(width = 8, style = "padding: 25px; padding-top: 5px;",
-                           verticalLayout(
-                             div(class = "ncontainer",
-                                 style = "width: 100%",
-                                 div(class = "n-content",
-                                     style = "width: 100%",
-                             plotlyOutput('stkP')
-                             )
-                             ),
-                             div(class = "ncontainer",
-                                 div(class = "n-content",
-                                    tableOutput("fnnclSmmry")
-                                 )
-                             ),
-                             div(class = "ncontainer",
-                                 div(class = "n-content",
-                                  uiOutput('dscrpt')
-                                 )
-                             )
-                             
-                             )
-                    ),
-                    column(width = 4, style = "padding: 25px; padding-top: 5px;", 
-                           verticalLayout(
-                             
-                             tabsetPanel(type = "tabs",
-                                         
-                                         tabPanel("News", uiOutput('stkNws')),
-                                         tabPanel("Press Release", uiOutput('stkPrs'))
-                             ),
-                             tableOutput("prfl")
-                             
-                           )
-                    )
-           ),
-           
-           ),
-
+  tabPanel(title = 'General', fluidRow(
+    column(
+      width = 8,
+      style = "padding: 25px; padding-top: 5px;",
+      verticalLayout(
+        div(
+          class = "ncontainer",
+          style = "width: 100%",
+          div(class = "n-content", style = "width: 100%", plotlyOutput('stkP'))
+        ),
+        div(
+          class = "ncontainer",
+          style = "width: 100%; overflow-x: auto;",
+          div(
+            class = "n-content",
+            style = "width: 100%; margin: auto;",
+            tableOutput("fnnclSmmry")
+          )
+        ),
+        div(class = "ncontainer", div(class = "n-content", uiOutput('dscrpt')))
+        
+      )
+    ),
+    column(
+      width = 4,
+      style = "padding: 25px; padding-top: 5px;",
+      verticalLayout(
+        tabsetPanel(
+          type = "tabs",
+          
+          tabPanel("News", uiOutput('stkNws')),
+          tabPanel("Press Release", uiOutput('stkPrs'))
+        ),
+        tableOutput("prfl")
+        
+      )
+    )
+  ), ), 
   #### tab fundamentals ----
   tabPanel(title = 'Fundamentals',
            sidebarLayout(
@@ -353,25 +319,6 @@ ui <- fluidPage(
                 selected = 'All Sectors'
               )
              ),
-           #   mainPanel(
-           #     verticalLayout(
-           #       
-           #       plotlyOutput('stkFndmt'),
-           # 
-           #     )
-           #   )
-           # ),
-           # fluidRow(column(width = 12, offset = 0, style = "align: center;",
-           #                 plotOutput('stkFndmntlsRltv',
-           #                            width = "95vw",
-           #                            height = "700px"))
-           #          ),
-           # fluidRow(column(width = 12, offset = 0, style = "align: center;",
-           #                 DTOutput('stkFndmntlsTbl',
-           #                            width = "95vw",
-           #                            height = "700px"))
-           #          )
-           
            
            ## more styling
            
@@ -550,95 +497,77 @@ tabPanel(
 ),
 
 #### tab capital allocation ----
-tabPanel(title = "Capital Allocation",
-         sidebarLayout(
-           sidebarPanel(
-             selectInput(
-               'cptlAllctnMtrics',
-               "Display Activity: ",
-               choices = c(
-                 "capitalExpenditure",
-                 "dividendsPaid",
-                 "netDebtRepayment",
-                 "netAcquisitions",
-                 "netInvestments",
-                 "netRepurchases"
-
-               ),
-               multiple = T,
-               selected = c(
-                 "capitalExpenditure",
-                 "dividendsPaid",
-                 "netAcquisitions",
-                 "netRepurchases"
-               )
-             ),
-             sliderInput(
-               'cptlAllctnSldr',
-               "Window: ",
-               min = 1995,
-               max = as.integer(format(Sys.Date(), '%Y')),
-               value = c(
-                 2007,
-                 as.integer(format(Sys.Date(), '%Y'))
-               ),
-               sep = '',
-               animate = F,
-               step = 1
-             ),
-           ),
-           mainPanel(
-             verticalLayout(
-               div(class = "ncontainer",
-                   div(class = "n-content",
-               column(width = 12,
-                      style = "display: flex; flex-direction: column; align-items: center;",
-                      plotlyOutput('cptlAllctn', 
-                                   width = "95%",
-                                   height = "650px")
-               
-             )
-                   )
-               )
-           )
-           
-         )
-         )
-         ),
+tabPanel(title = "Capital Allocation", sidebarLayout(
+  sidebarPanel(
+    selectInput(
+      'cptlAllctnMtrics',
+      "Display Activity: ",
+      choices = c(
+        "capitalExpenditure",
+        "dividendsPaid",
+        "netDebtRepayment",
+        "netAcquisitions",
+        "netInvestments",
+        "netRepurchases"
+        
+      ),
+      multiple = T,
+      selected = c(
+        "capitalExpenditure",
+        "dividendsPaid",
+        "netAcquisitions",
+        "netRepurchases"
+      )
+    ),
+    sliderInput(
+      'cptlAllctnSldr',
+      "Window: ",
+      min = 1995,
+      max = as.integer(format(Sys.Date(), '%Y')),
+      value = c(2007, as.integer(format(Sys.Date(
+      ), '%Y'))),
+      sep = '',
+      animate = F,
+      step = 1
+    ),
+  ),
+  mainPanel(verticalLayout(div(
+    class = "ncontainer", div(
+      class = "n-content",
+      column(
+        width = 12,
+        style = "display: flex; flex-direction: column; align-items: center;",
+        plotlyOutput('cptlAllctn', width = "95%", height = "650px")
+        
+      )
+    )
+  )))
+)), 
 #### transcripts ----
-tabPanel(title = "Transcripts",
-         sidebarLayout(
-           sidebarPanel(
-             numericInput(
-               "trnscrptYr",
-               "Select Year: ",
-               value = as.integer(format(Sys.Date(), "%Y")),
-               min = 1990,
-               max =as.integer(format(Sys.Date(), "%Y")),
-               step = 1
-             ),
-             numericInput(
-               "trnscrptQrtr",
-               "Select Quarter: ",
-               value = 1,
-               min = 1,
-               max = 4,
-               step = 1
-             )
-           ),
-           mainPanel(
-             verticalLayout(
-               div(class = "ncontainer",
-                   div(class = "n-content",
-               uiOutput('trnscrpt'),
-                   )
-               )
-             )
-           )
-           
-         )
-         ),
-
+tabPanel(title = "Transcripts", sidebarLayout(
+  sidebarPanel(
+    numericInput(
+      "trnscrptYr",
+      "Select Year: ",
+      value = as.integer(format(Sys.Date(), "%Y")),
+      min = 1990,
+      max = as.integer(format(Sys.Date(), "%Y")),
+      step = 1
+    ),
+    numericInput(
+      "trnscrptQrtr",
+      "Select Quarter: ",
+      value = 1,
+      min = 1,
+      max = 4,
+      step = 1
+    )
+  ),
+  mainPanel(verticalLayout(div(
+    class = "ncontainer", div(class = "n-content", uiOutput('trnscrpt'), )
+  )))
+  
+)), 
 #### tab other ----
 tabPanel(title = "Other", fluidRow(
   column(
@@ -652,7 +581,7 @@ tabPanel(title = "Other", fluidRow(
     offset = 0,
     plotlyOutput('sp5Prfmnc')
   )
-)),
+)), 
 
 #### login ----
 
@@ -669,29 +598,7 @@ tabPanel("Login",
            
            shinyauthr::logoutUI(class = "pull-right", id = "logout")
            
-         )),
-
-# tags$head(
-#   tags$style(HTML("
-#       .navbar-nav {
-#         width: 100%;
-#       }
-#       .navbar-nav > li:nth-child(10) {
-#         float: right;
-#       }
-#       .navbar-nav > li:nth-child(10) > a {
-#         color: red !important;
-#       }
-#     "))
-# )
-
-
-
-# tags$script(
-#   HTML("var header = $('.navbar > .container-fluid');
-#                               header.append('<div style=\"float:right; padding-top: 8px\"><button id=\"signin\" type=\"button\" class=\"btn btn-primary action-button\" onclick=\"signIn()\">Sign In</button></div>')")
-# )
-
+         )), 
 )
 
 )
@@ -718,60 +625,36 @@ server <- function(input, output, session) {
   stkBal <- reactiveVal(NULL)
   stkCF <- reactiveVal(NULL)
   
+  # market history
+  # United States
+  # Dow Jones Industrial Average: ^DJI
+  # S&P 500: ^GSPC
+  # NASDAQ Composite: ^IXIC
+  # Russell 2000: ^RUT
+  # Wilshire 5000: ^W5000
+  # Canada
+  # S&P/TSX Composite Index: ^GSPTSE
+  # Europe
+  # FTSE 100 (UK): ^FTSE
+  # DAX (Germany): ^GDAXI
+  # CAC 40 (France): ^FCHI
+  # EURO STOXX 50: ^STOXX50E
+  # Asia
+  # Nikkei 225 (Japan): ^N225
+  # Hang Seng Index (Hong Kong): ^HSI
+  # SSE Composite Index (China): ^SSE
+  # Australia
+  # S&P/ASX 200: ^AXJO
+  # Latin America
+  # IBOVESPA (Brazil): ^BVSP
+  # Merval (Argentina): ^MERV
+  
   sp5 <- reactive({
-    # market history
-    # United States
-    # Dow Jones Industrial Average: ^DJI
-    # S&P 500: ^GSPC
-    # NASDAQ Composite: ^IXIC
-    # Russell 2000: ^RUT
-    # Wilshire 5000: ^W5000
-    # Canada
-    # S&P/TSX Composite Index: ^GSPTSE
-    # Europe
-    # FTSE 100 (UK): ^FTSE
-    # DAX (Germany): ^GDAXI
-    # CAC 40 (France): ^FCHI
-    # EURO STOXX 50: ^STOXX50E
-    # Asia
-    # Nikkei 225 (Japan): ^N225
-    # Hang Seng Index (Hong Kong): ^HSI
-    # SSE Composite Index (China): ^SSE
-    # Australia
-    # S&P/ASX 200: ^AXJO
-    # Latin America
-    # IBOVESPA (Brazil): ^BVSP
-    # Merval (Argentina): ^MERV
-    
     fmpc_price_history(symbols = "^GSPC", startDate = input$i_stkMdlSldr[1]) %>% select(symbol, date, close)
   })
-  
-  # dji <- reactive({
-  #   fmpc_price_history(symbols = "^DJI", startDate = input$i_stkMdlSldr[1]) %>% select(symbol, date, close)
-  # })
-  # 
-  # ndq <- reactive({
-  #   fmpc_price_history(symbols = "^IXIC", startDate = input$i_stkMdlSldr[1]) %>% select(symbol, date, close)
-  # })
-  # 
-  eur50 <- reactive({
-    fmpc_price_history(symbols = "^STOXX50E", startDate = Sys.Date() - 90) %>% select(symbol, date, close)
-  })
-  
-  # jpn <- reactive({
-  #   fmpc_price_history(symbols = "^N225", startDate = Sys.Date() - 90) %>% select(symbol, date, close)
-  # })
-  
-  chn <- reactive({
-    fmpc_price_history(symbols = "^HSI", startDate = Sys.Date() - 90) %>% select(symbol, date, close)
-  })
-  
-  # ftse <- reactive({
-  #   fmpc_price_history(symbols = "^FTSE", startDate = Sys.Date() - 90) %>% select(symbol, date, close)
-  # })
-  # 
-  asx <- reactive({
-    fmpc_price_history(symbols = "^AXJO", startDate = Sys.Date() - 90) %>% select(symbol, date, close)
+
+  indxs <- reactive({
+    fmpc_price_history(symbols = c("^AXJO", "^GSPC", "^HSI", "^STOXX50E"), startDate = Sys.Date() - 90) %>% select(symbol, date, close)
   })
   
   
@@ -837,21 +720,23 @@ server <- function(input, output, session) {
       }
     }
     
-    d_ <- d_ %>% mutate(date = as.Date(date), 
-                        value = round(value, 2),
-                        Indicator = case_when(
-                          Indicator == 'realGDP' ~ 'Real Gross Domestic Product (USD)',
-                          Indicator == 'realGDPPerCapita' ~ 'Real GDP Per Capita (USD)',
-                          Indicator == 'federalFunds' ~ 'Federal Fund Rate (%)',
-                          Indicator == 'CPI' ~ 'Consumer Price Index',
-                          Indicator == 'inflation' ~ 'Inflation Rate (%)',
-                          Indicator == 'consumerSentiment' ~ 'Consumer Sentiment Index',
-                          Indicator == 'unemploymentRate' ~ 'Unemployment Rate (%)',
-                          Indicator == '30YearFixedRateMortgageAverage' ~ '30-Year Fixed Rate Mortgage Average (%)',
-                          Indicator == 'retailSales' ~ 'Retail Sales',
-                          Indicator == 'commercialBankInterestRateOnCreditCardPlansAllAccounts' ~ 'Commercial Credit Card Bank Interest (%)',
-                          TRUE ~ Indicator  # Keep original if no match
-                        ))
+    d_ <- d_ %>% mutate(
+      date = as.Date(date),
+      value = round(value, 2),
+      Indicator = case_when(
+        Indicator == 'realGDP' ~ 'Real Gross Domestic Product (USD)',
+        Indicator == 'realGDPPerCapita' ~ 'Real GDP Per Capita (USD)',
+        Indicator == 'federalFunds' ~ 'Federal Fund Rate (%)',
+        Indicator == 'CPI' ~ 'Consumer Price Index',
+        Indicator == 'inflation' ~ 'Inflation Rate (%)',
+        Indicator == 'consumerSentiment' ~ 'Consumer Sentiment Index',
+        Indicator == 'unemploymentRate' ~ 'Unemployment Rate (%)',
+        Indicator == '30YearFixedRateMortgageAverage' ~ '30-Year Fixed Rate Mortgage Average (%)',
+        Indicator == 'retailSales' ~ 'Retail Sales',
+        Indicator == 'commercialBankInterestRateOnCreditCardPlansAllAccounts' ~ 'Commercial Credit Card Bank Interest (%)',
+        TRUE ~ Indicator  # Keep original if no match
+      )
+    )
     
     
       p <- d_ %>% ggplot() +
@@ -882,23 +767,22 @@ server <- function(input, output, session) {
   #### markets ----
   
   output$mrkts <- renderPlotly({
-    d_ <- rbind(req(eur50()) %>% mutate(Index = "^STOXX50E"), 
-                # req(jpn()) %>% mutate(Index = "^N225"),
-                req(asx()) %>% mutate(Index = "^AXJO"),
-                req(sp5()) %>% filter(date >= Sys.Date() - 90) %>% mutate(Index = "^GSPC"), 
-                req(chn()) %>% mutate(Index = "^HSI"))
-    mins_ <- d_ %>% group_by(Index) %>% summarise(mn_ = min(close))
-    d_ <- d_ %>% left_join(mins_, by = "Index")
+    
+    d_ <- req(indxs())
+    mins_ <- d_ %>% group_by(symbol) %>% summarise(mn_ = min(close))
+    d_ <- d_ %>% left_join(mins_, by = "symbol")
     
     d_ <- d_ %>%
-      mutate(Index = case_when(
-        Index == '^STOXX50E' ~ 'EURO STOXX 50',
-        Index == '^N225' ~ 'Nikkei 225',
-        Index == "^AXJO" ~ "AUS 200",
-        Index == '^GSPC' ~ 'S&P 500',
-        Index == '^HSI' ~ 'Hang Seng Index',
-        TRUE ~ Index  # Keep original if no match
-      ))
+      mutate(
+        Index = case_when(
+          symbol == '^STOXX50E' ~ 'EURO STOXX 50',
+          symbol == '^N225' ~ 'Nikkei 225',
+          symbol == "^AXJO" ~ "AUS 200",
+          symbol == '^GSPC' ~ 'S&P 500',
+          symbol == '^HSI' ~ 'Hang Seng Index',
+          TRUE ~ symbol  # Keep original if no match
+        )
+      )
     
     ggplotly(
       d_ %>% ggplot() +
@@ -967,8 +851,7 @@ server <- function(input, output, session) {
         title = d_$title[i],
         text = d_$text[i]
       )
-    }
-    )
+    })
   })
 
   #### news ----
@@ -1283,28 +1166,12 @@ server <- function(input, output, session) {
       )
       
     })
-      
+
       #### stock press ---- 
       output$stkPrs <- renderUI({
         d_ <- general.APIcall(endpoint = "Press-Release-Stock", symbol = i_mstrSmbl()) #%>% filter(site != "fool.com")
         
-        tags$style(HTML("
-  @media (max-width: 300px) {
-    .news-container {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    .news-image {
-      margin-right: 0;
-      margin-bottom: 10px;
-      flex: 0 0 auto; /* Adjust image size if necessary */
-    }
-    .news-header {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-  }
-"))
+        
         lapply(1:(min(6, nrow(d_))), function(i) {
           create_news_container(
             type = "Press-Release",
@@ -1313,11 +1180,10 @@ server <- function(input, output, session) {
             title = d_$title[i],
             text = d_$text[i]
           )
-        }
-        )
         })
+      })
     
-    #### stock snapshot ----
+    #### stock summary ----
     
     output$fnnclSmmry <- renderText({
       mkap <- fmpc_security_mrktcap(i_mstrSmbl(), limit = 1)
@@ -1358,14 +1224,7 @@ server <- function(input, output, session) {
     
     output$prfl <- renderText({
 
-      req(stkPrfl()) %>% select(-mktCap,
-                                -description,
-                                -image,
-                                -defaultImage,
-                                -dcf,
-                                -dcfDiff,
-                                -zip,
-      ) %>%
+      req(stkPrfl()) %>% select(-mktCap,-description,-image,-defaultImage,-dcf,-dcfDiff,-zip,) %>%
         t(.) %>% kable() %>%
         kable_styling(
           bootstrap_options = c("striped", "hover", "condensed", "responsive"),
@@ -1374,16 +1233,13 @@ server <- function(input, output, session) {
         ) %>%
         column_spec(1, bold = TRUE) %>%
         row_spec(0, bold = TRUE, color = "white") %>% # background = "#4E79A7") %>%
-                 add_header_above(c("General" = 1, " " = 1))
+        add_header_above(c("General" = 1, " " = 1))
     })
 
     #### stock description ----
     
     output$dscrpt <- renderUI({
-      tagList(
-        tags$h2("Description"),
-        tags$p(req(stkPrfl()) %>% pull(description))
-      )
+      tagList(tags$h2("Description"), tags$p(req(stkPrfl()) %>% pull(description)))
     })
 
     
@@ -1905,11 +1761,7 @@ server <- function(input, output, session) {
     
     output$trnscrpt <- renderUI({
       tx_d <- fmpc_earning_call_transcript(i_mstrSmbl(), quarter = input$trnscrptQrtr, year = input$trnscrptYr)
-      # tagList(
-      #   tags$h2("Description"),
-      #   tags$p(tx_d)
-      # )
-      
+
       if (is.null(tx_d)) {
         return(tags$p("Transcript not available for this quarter"))
       }

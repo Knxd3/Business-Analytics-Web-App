@@ -122,7 +122,9 @@ create_news_container <- function(symbol, type = "News", date = NA, title = NA, 
 
          a(href = url, "Read more", target = "_blank",
            style = "color: #1a5f7a; text-decoration: none; font-weight: bold;")
-       )
+       ),
+       
+       
        
      )
      

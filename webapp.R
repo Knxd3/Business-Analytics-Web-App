@@ -14,7 +14,8 @@ library(shinyauthr)
 library(RSQLite)
 library(sodium)
 library(thematic)
-library(shinybrowser)
+# library(shinybrowser)
+library(shinyjs)
 
 
 # load API keys
@@ -42,13 +43,6 @@ shinyjs:::useShinyjs()
 
 autosuggest_ <- read.csv('www/availab_symbols.csv') %>% pull(x)
 body_width <- 8
-
-# start <- Sys.time()
-# 
-# fmpc_price_history('AAPL', startDate = -1) %>% select(date, close) %>% mutate(close = round(close,2))
-# 
-# Sys.time() - start
-
 
 #### shiny UI ----
 ui <- fluidPage(
@@ -196,7 +190,7 @@ ui <- fluidPage(
       div(
         class = "dashboard-plot-container",
         style = "max-width: 1200px; width: 100%; margin: 0 auto;",
-        plotlyOutput('ecn', height = '1850px')
+        plotlyOutput('ecn', height = '2550px')
       )
     )
   )))), 
@@ -372,20 +366,22 @@ ui <- fluidPage(
                plotOutput('stkFndmntlsRltv', width = "95%", height = "700px")
              ))
            )), 
-           fluidRow(column(
+           fluidRow(#div(class = "ncontainer", 
+                        #div(
+             #lass = "n-content", 
+             column(
              width = 10,
              offset = 1,
              style = "align: center;",
-             div(class = "ncontainer", div(
-               class = "n-content",
+             
                # DTOutput('stkFndmntlsTbl',
                #          width = "95vw",
                #          height = "700px")
                tabsetPanel(
                  type = "tabs",
-                 tabPanel("Income", DTOutput(
+                 tabPanel("Income", div(DTOutput(
                    'stkInc_', width = "95%", height = "700px"
-                 )),
+                 ))),
                  tabPanel("Balance", DTOutput(
                    'stkBal_', width = "95%", height = "700px"
                  )),
@@ -393,8 +389,10 @@ ui <- fluidPage(
                    'stkCF_', width = "95%", height = "700px"
                  ))
                )
-             ))
-           ))
+             )
+             #)
+           #)
+           )
            
            ),
   
@@ -583,7 +581,7 @@ tabPanel(
         "Select Year: ",
         value = as.integer(format(Sys.Date(), "%Y")),
         min = 1990,
-        max = as.integer(format(Sys.Date(), "%Y")),
+        max = as.integer(format(Sys.Date(), "%Y")) + 2,
         step = 1
       ),
       numericInput(
@@ -606,9 +604,10 @@ tabPanel(
           "i_oai",
           "Ask the AI assistant: ",
           rows = 3,
+          value = "Summarise material information.",
           placeholder = "Summarise the quarter's material investor information.", 
         ),
-        actionButton('oaiBtn', 'Submit')
+        actionButton('oaiBtn', 'Submit', disabled = TRUE)
       )),
       hr(),
       
@@ -679,7 +678,7 @@ tabPanel(
 
 #### shiny server ----
 server <- function(input, output, session) {
-  
+
   con <- dbConnect(RSQLite::SQLite(), "datadb.db")
   
   i_mstrSmbl <- reactiveVal(NULL)
@@ -1070,14 +1069,23 @@ server <- function(input, output, session) {
     }
   })
   
+  trnscrpt_ <- reactive({
+    fmpc_earning_call_transcript(i_mstrSmbl(), quarter = input$trnscrptQrtr, year = input$trnscrptYr)
+    
+  })
+  
   
   observeEvent(input$mstrSmblBtn, {
     
-    # print(credentials()$info)
     
     if (input$navbar == "Intro") {
       updateTabsetPanel(session, "navbar", selected = "General")
     }
+    
+    updateActionButton(session, 'oaiBtn', disabled = FALSE)
+    output$chtHst <- renderUI({
+        return(HTML("<p></p>"))
+        })
     
     #### data ----
     
@@ -1995,10 +2003,7 @@ server <- function(input, output, session) {
     
     
     
-    trnscrpt_ <- reactive({
-      fmpc_earning_call_transcript(i_mstrSmbl(), quarter = input$trnscrptQrtr, year = input$trnscrptYr)
-      
-    })
+    
     
     # chat_history <- reactiveVal(
     # 
@@ -2021,9 +2026,13 @@ server <- function(input, output, session) {
     # typeof(fmpc_security_profile('AAPL') %>% pull(companyName))
     # typeof(fmpc_earning_call_transcript() %>% pull(content))
     # 
+    
+    
+    # kk <- reactiveVal(0)
     #### transcript ----
     
     output$trnscrpt <- renderUI({
+    
       tx_d <- trnscrpt_()
       if (is.null(tx_d)) {
         return(tags$p("Transcript not available for this quarter"))
@@ -2043,50 +2052,7 @@ server <- function(input, output, session) {
     })
     
     
-    observeEvent(input$oaiBtn, {
-      
-      if (nchar(input$i_oai) > 500) {
-        return(HTML("The question is too long."))
-      }
-      q_ <- list(list(role = "user", content = input$i_oai))
-      
-      prompt <- list(list(
-        role = "system",
-        content = paste0(
-          "You are an expert financial analyst specializing in interpreting investor transcripts. Analyze the following excerpt from",
-          stkPrfl() %>% pull(companyName),
-          " Q",
-          as.character(input$trnscrptQrtr),
-          " ",
-          as.character(input$trnscrptYr),
-          " earnings call transcript, focusing on key financial metrics, management's outlook, and any significant strategic changes. Provide a structured response with an executive summary, main points using bullet points, and suggest follow-up questions for investors. Consider current market conditions and Company X's position in the tech industry when providing your analysis.",
-          " Format response in HTML for R Shiny renderUI! don't reflect this in the response (for example, for bold, use a div with appropriate style parameter). This is the transcript: ",
-          # substr(
-            trnscrpt_() %>% pull(content)
-          # , 1, 5000)
-        )
-      ))
-      
-      msgs <- c(prompt, q_)
-      
-      completion <- create_chat_completion(
-        model = "gpt-4o-mini",
-        messages = msgs,
-        max_tokens = 500,
-        temperature = 0.25
-      )
-      
-      resp_ <- list(list(role = "assistant", content = completion$choices$message.content))
-      updateTextAreaInput(session, "i_oai", value = "")
-      
-      msgs <- c(msgs, resp_)
-      output$chtHst <- renderUI({
-        # print(msgs)
-        return(HTML(paste(sapply(msgs[-1], function(msg) {
-          paste0(toupper(msg$role), ": ", msg$content, "<br> <br>")
-        }), collapse = "")))
-      })
-    })
+    
     
     #### gradient ----
     
@@ -2145,6 +2111,102 @@ server <- function(input, output, session) {
         ) + labs(title = "Performance vs. SP500") + theme_minimal()
       ) %>% layout(showlegend = FALSE)
     })
+    
+  })
+  
+  observeEvent(input$oaiBtn, {
+    # dbExecute(con, "CREATE TABLE IF NOT EXISTS IP_user (
+    #       IP TEXT,
+    #       COUNT_ NUMERIC(10,0),
+    #       DATE_ TEXT
+    #   )")
+    # 
+    # tables <- dbListTables(con)
+    # print(paste("Tables in the database:", paste(tables, collapse = ", ")))
+    
+    if (nchar(input$i_oai) > 500) {
+      updateTextAreaInput(session, "i_oai", value = "The question is too long.")
+      return()
+    }
+    
+    # ip <- session$clientData$url_hostname
+    # dt <- format(Sys.Date(), "%Y-%m-%d")
+    # 
+    # user_e <- if (nrow(dbGetQuery(con, "SELECT IP FROM IP_user WHERE IP = ? and DATE_ = ? AND IP != '127.0.0.1'", params = list(ip, dt))) > 0) {1} else {0}
+    # 
+    # 
+    # # if user exists, see usage for today
+    # if (user_e) {
+    # result <- dbGetQuery(con, "SELECT COUNT_ FROM IP_user WHERE IP = ? and DATE_ = ?", params = list(ip, dt)) %>% pull(COUNT_)
+    # } else {
+    #   result <- 0
+    # }
+    # 
+    # 
+    # if (result > 7) {
+    #   output$chtHst <- renderUI({
+    #   return(HTML("<p> Token limit exceeded. </p>"))
+    #   })
+    # }
+    # 
+    # # if less than 7 queries, run AI
+    # else {
+    
+    # newk <- kk() + 1
+    # kk(newk)
+    # 
+    # ip <- session$clientData$url_hostname
+    # k <- newk
+    # dt <- format(Sys.Date(), "%Y-%m-%d")
+    # 
+    # # update usage or add user
+    # 
+    # if (user_e) {dbExecute(con, "UPDATE IP_user SET COUNT_ = ? WHERE IP = ? AND DATE_ = ?", params = list(k, ip, dt))} 
+    # else {
+    #   dbExecute(con, "INSERT INTO IP_user (IP, COUNT_, DATE_) VALUES (?, ?, ?)", params = list(ip, k, dt))
+    # }
+    
+    
+    q_ <- list(list(role = "user", content = input$i_oai))
+    
+    prompt <- list(list(
+      role = "system",
+      content = paste0(
+        "You are an expert financial analyst specializing in interpreting investor transcripts. Analyze the following excerpt from",
+        stkPrfl() %>% pull(companyName),
+        " Q",
+        as.character(input$trnscrptQrtr),
+        " ",
+        as.character(input$trnscrptYr),
+        " earnings call transcript, focusing on key financial metrics, management's outlook, and any significant strategic changes. Provide a structured response with an executive summary, main points using bullet points and historical parallels. Consider current market conditions and the company's position in its industry when providing your analysis.",
+        " Format response in HTML for R Shiny renderUI and don't reflect this in the response (for example, for bold, use a div with appropriate style parameter). This is the transcript: ",
+        # substr(
+        trnscrpt_() %>% pull(content)
+        # , 1, 5000)
+      )
+    ))
+    
+    msgs <- c(prompt, q_)
+    
+    completion <- create_chat_completion(
+      model = "gpt-4o-mini",
+      messages = msgs,
+      max_tokens = 700,
+      temperature = 0.3
+    )
+    
+    resp_ <- list(list(role = "assistant", content = sub("```html", "", completion$choices$message.content)))
+    updateTextAreaInput(session, "i_oai", value = "")
+    
+    msgs <- c(msgs, resp_)
+    output$chtHst <- renderUI({
+      # print(msgs)
+      return(HTML(paste(sapply(msgs[-1], function(msg) {
+        paste0(toupper(msg$role), ": ", msg$content, "<br> <br>")
+      }), collapse = "")))
+    })
+    
+    #  }
     
   })
   

@@ -113,7 +113,7 @@ create_news_container <- function(symbol, type = "News", date = NA, title = NA, 
            style = "display: flex; justify-content: space-between; margin-bottom: 10px;",
 
            strong(site, style = "font-size: 16px; color: #1a5f7a;"),
-           span(format(as.POSIXct(publishedDate), "%B %d, %Y %H:%M"), style = "color: #666;")
+           span(format(as.POSIXct(publishedDate), "%b %d, %Y %H:%M"), style = "color: #666;")
          ),
 
          h5(title, style = "margin-top: 0; margin-bottom: 10px; color: #333;"),
@@ -146,7 +146,7 @@ create_news_container <- function(symbol, type = "News", date = NA, title = NA, 
       style = "display: flex; justify-content: space-between; margin-bottom: 10px;",
       
       strong(symbol, style = "font-size: 18px; color: #1a5f7a;"),
-      span(format(as.POSIXct(date), "%B %d, %Y %H:%M"), style = "color: #666;")
+      span(format(as.POSIXct(date), "%b %d, %Y %H:%M"), style = "color: #666;")
     ),
     
     h5(title, style = "margin-top: 0; margin-bottom: 10px; color: #333;"),

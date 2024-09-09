@@ -39,13 +39,19 @@ shinyjs:::useShinyjs()
 #                                                       exchangeShortName %in% c("NYSE", "NASDAQ")) %>% pull(symbol)
 # write.csv(autosuggest_, 'availab_symbols.csv')
 
+
 autosuggest_ <- read.csv('www/availab_symbols.csv') %>% pull(x)
+body_width <- 8
+
+# start <- Sys.time()
+# 
+# fmpc_price_history('AAPL', startDate = -1) %>% select(date, close) %>% mutate(close = round(close,2))
+# 
+# Sys.time() - start
 
 
 #### shiny UI ----
 ui <- fluidPage(
-  
-  # shinybrowser::detect(),
 
   tags$head(tags$style(
     HTML(
@@ -161,7 +167,7 @@ ui <- fluidPage(
     tabPanel(title = "Intro",
              id = "Intro", 
              div(fluidRow(
-      column(width = 10, offset = 1, #### econ/markets/cmmdts ----
+      column(width = body_width, offset = (12 - body_width)/2, #### econ/markets/cmmdts ----
              # more styling
              verticalLayout(div(
                class = "dashboard-box", div(
@@ -179,7 +185,7 @@ ui <- fluidPage(
                )
              )))
     )), 
-  fluidRow(column(width = 10, offset = 1, verticalLayout(div(
+  fluidRow(column(width = body_width, offset = (12 - body_width)/2, verticalLayout(div(
     class = "dashboard-box", div(
       class = "dashboard-box-content",
       div(
@@ -194,7 +200,7 @@ ui <- fluidPage(
       )
     )
   )))), 
-  fluidRow(column(width = 10, offset = 1, verticalLayout(div(
+  fluidRow(column(width = body_width, offset = (12 - body_width)/2, verticalLayout(div(
     class = "dashboard-box", div(
       class = "dashboard-box-content",
       div(
@@ -212,8 +218,8 @@ ui <- fluidPage(
   )),
   #### news/press ----
   fluidRow(column(
-    width = 10,
-    offset = 1,
+    width = body_width,
+    offset = (12 - body_width)/2,
     tabsetPanel(
       type = "tabs",
       tabPanel("News", uiOutput("nws")),
@@ -226,7 +232,7 @@ ui <- fluidPage(
   tabPanel(title = 'General', 
            id = "General",
     fluidRow(
-             column(width = 10, offset = 1,
+             column(width = body_width, offset = (12 - body_width)/2,
     fluidRow(
     column(
       width = 8,
@@ -272,7 +278,7 @@ ui <- fluidPage(
   tabPanel(title = 'Fundamentals',
            id = "Fundamentals",
            
-           fluidRow(column(width = 10, offset = 1,
+           fluidRow(column(width = body_width, offset = (12 - body_width)/2,
            sidebarLayout(
              sidebarPanel(
                selectInput(
@@ -397,7 +403,7 @@ tabPanel(
   title = "Model",
   id = "Model",
   
-  fluidRow(column(width = 10, offset = 1,
+  fluidRow(column(width = body_width, offset = (12 - body_width)/2,
   sidebarLayout(
     sidebarPanel(
       sliderInput(
@@ -458,7 +464,7 @@ tabPanel(
 tabPanel(
   title = "Valuation",
   id = "Valuation",
-  fluidRow(column(width = 10, offset = 1,
+  fluidRow(column(width = body_width, offset = (12 - body_width)/2,
   sidebarLayout(
     sidebarPanel(
       width = 3,
@@ -520,7 +526,7 @@ tabPanel(
 tabPanel(
   title = "Capital Allocation",
   id = "Capital Allocation",
-  fluidRow(column(width = 10, offset = 1,
+  fluidRow(column(width = body_width, offset = (12 - body_width)/2,
   sidebarLayout(
     sidebarPanel(
       selectInput(
@@ -568,7 +574,7 @@ tabPanel(
 tabPanel(
   title = "Transcripts",
   id = "Transcripts",
-  fluidRow(column(width = 10, offset = 1,
+  fluidRow(column(width = body_width, offset = (12 - body_width)/2,
   sidebarLayout(
     
     sidebarPanel(
@@ -673,9 +679,9 @@ tabPanel(
 
 #### shiny server ----
 server <- function(input, output, session) {
-
-  # shinyjs::toggleClass(selector = '.navbar-nav', class = "navbar-nav")
+  
   con <- dbConnect(RSQLite::SQLite(), "datadb.db")
+  
   i_mstrSmbl <- reactiveVal(NULL)
   
   ## data price
@@ -791,7 +797,7 @@ server <- function(input, output, session) {
       # geom_ribbon(aes(x = date, ymin = mn_ * .97, ymax = close), alpha = 0.15) + #, fill = '#56CC9D'
       geom_line(aes(x = date, y = value)) + #, colour = '#FF7851'
       scale_x_date(date_labels = "%Y") +
-      facet_wrap(vars(Indicator), ncol = 1, scales = 'free') +
+      facet_wrap(vars(IndicatorName), ncol = 1, scales = 'free') +
       scale_y_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale())) + #scales::label_number(scale = 1e-3)) +
       labs(x = '', y = '') +
       theme_minimal() +
@@ -812,7 +818,7 @@ server <- function(input, output, session) {
         )
       )
     
-    print(Sys.time() - start)
+    print(paste("Econ: ", as.character(Sys.time() - start)))
     
     return(ggplotly(p) %>% 
              config(
@@ -821,109 +827,6 @@ server <- function(input, output, session) {
              ) %>% layout(
                dragmode = FALSE
              ))
-    
-    
-    # output$ecn <- renderUI({
-    #   
-    #   if (shinybrowser::get_device() == "Mobile") {
-    #     
-    #     
-    #     plotOutput("ggplot", height = "1850px")
-    #     
-    #   } else {
-    #     plotlyOutput("plotly", height = "1850px")
-    #   }
-    #   
-    # })
-    # 
-    # 
-    # ecn_plt_obj <- reactive({
-    #   
-    #   for (i in c(
-    #     'realGDP',
-    #     'realGDPPerCapita',
-    #     'federalFunds',
-    #     'CPI',
-    #     'inflation',
-    #     'consumerSentiment',
-    #     'unemploymentRate',
-    #     'commercialBankInterestRateOnCreditCardPlansAllAccounts',
-    #     '30YearFixedRateMortgageAverage',
-    #     'retailSales'
-    #   )) {
-    #     tmp <- general.APIcall(endpoint = 'Econ', symbol = i) %>% mutate(Indicator = i)
-    #     
-    #     if (exists("d_")) {
-    #       d_ <- rbind(d_, tmp)
-    #     } else {
-    #       d_ <- tmp
-    #     }
-    #   }
-    #   
-    #   d_ <- d_ %>% mutate(
-    #     date = as.Date(date),
-    #     value = round(value, 2),
-    #     Indicator = case_when(
-    #       Indicator == 'realGDP' ~ 'Real Gross Domestic Product (USD)',
-    #       Indicator == 'realGDPPerCapita' ~ 'Real GDP Per Capita (USD)',
-    #       Indicator == 'federalFunds' ~ 'Federal Fund Rate (%)',
-    #       Indicator == 'CPI' ~ 'Consumer Price Index',
-    #       Indicator == 'inflation' ~ 'Inflation Rate (%)',
-    #       Indicator == 'consumerSentiment' ~ 'Consumer Sentiment Index',
-    #       Indicator == 'unemploymentRate' ~ 'Unemployment Rate (%)',
-    #       Indicator == '30YearFixedRateMortgageAverage' ~ '30-Year Fixed Rate Mortgage Average (%)',
-    #       Indicator == 'retailSales' ~ 'Retail Sales',
-    #       Indicator == 'commercialBankInterestRateOnCreditCardPlansAllAccounts' ~ 'Commercial Credit Card Bank Interest (%)',
-    #       TRUE ~ Indicator  # Keep original if no match
-    #     )
-    #   )
-    #   
-    #   
-    #   d_ %>% ggplot() +
-    #     # geom_area(aes(x = date, y = close, ymin = 10000), alpha = 0.15) +
-    #     # geom_ribbon(aes(x = date, ymin = mn_ * .97, ymax = close), alpha = 0.15) + #, fill = '#56CC9D'
-    #     geom_line(aes(x = date, y = value)) + #, colour = '#FF7851'
-    #     scale_x_date(date_labels = "%Y") +
-    #     facet_wrap(vars(Indicator), ncol = 1, scales = 'free') +
-    #     scale_y_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale())) + #scales::label_number(scale = 1e-3)) +
-    #     labs(x = '', y = '') +
-    #     theme_minimal() +
-    #     theme(
-    #       # panel.spacing.x = unit(-1, "lines"),
-    #       panel.spacing.y = unit(-0.5, "lines"),
-    #       axis.text = element_text(face = "bold", size = 10),
-    #       # plot.title = element_text(face = "bold", size = 20, hjust = 0.5, margin = margin(t = 10, b = 10)),
-    #       strip.text.x = element_text(
-    #         face = "bold",
-    #         size = 12,
-    #         margin = margin(
-    #           t = 10,
-    #           r = 0,
-    #           b = 10,
-    #           l = 0
-    #         )
-    #       )
-    #     )
-    #   
-    #   
-    # })
-    # 
-    # 
-    # # output$ecn <- renderUI({
-    # 
-    # output$ggplot <- renderPlot({
-    #   
-    #   ecn_plt_obj()
-    #   
-    # })
-    # 
-    # 
-    # output$plotly <- renderPlotly({
-    #   
-    #   ggplotly(ecn_plt_obj())
-    #   
-    # })
-
       
   })
   
@@ -932,6 +835,9 @@ server <- function(input, output, session) {
   #### markets ----
   
   output$mrkts <- renderPlotly({
+    
+    start <- Sys.time()
+    
     d_ <- req(indxs())
     mins_ <- d_ %>% group_by(symbol) %>% summarise(mn_ = min(close))
     d_ <- d_ %>% left_join(mins_, by = "symbol")
@@ -947,6 +853,8 @@ server <- function(input, output, session) {
           TRUE ~ symbol  # Keep original if no match
         )
       )
+    
+    print(paste("Markets: ", as.character(Sys.time() - start)))
     
     ggplotly(
       d_ %>% ggplot() +
@@ -986,38 +894,30 @@ server <- function(input, output, session) {
   })
   
   
+  #### commodities ----
+  
   output$cmdts <- renderPlotly({
-    oil <-  general.APIcall(
-      endpoint = "Crude-Oil",
-      symbol = "CLUSD",
-      columns = c("date", "close")
-    ) %>% mutate(Commodity = "Crude Oil")
-    gas <- general.APIcall(
-      endpoint = "Nat-Gas",
-      symbol = "NGUSD",
-      columns = c("date", "close")
-    ) %>% mutate(Commodity = "Natural Gas")
-    cattle <- general.APIcall(
-      endpoint = "Beef",
-      symbol = "GFUSX",
-      columns = c("date", "close")
-    ) %>% mutate(Commodity = "Live Cattle Futures")
-    corn <- general.APIcall(
-      endpoint = "Corn",
-      symbol = "ZCUSX",
-      columns = c("date", "close")
-    ) %>% mutate(Commodity = "Corn Futures")
     
-    d_ <- rbind(oil, gas, cattle, corn) %>% mutate(date = as.Date(date), close = round(close , 2))
+    start = Sys.time()
+    
+    result <- dbGetQuery(con, "SELECT * FROM commodities") %>% mutate(date = as.Date(date), date_added = as.Date(date_added))
+    last_run_date <- as.Date(result %>% summarise(last_date_added = max(date_added)) %>% pull(last_date_added))
+    
+    if (Sys.Date() - as.Date(last_run_date) > 30){
+      source(createdb.R)
+    }
+    
+    
+    print(paste("Commodities: ", as.character(Sys.time() - start)))
     
     
     ggplotly(
-      d_ %>% ggplot() +
+      result %>% ggplot() +
         # # geom_area(aes(x = date, y = close, ymin = 10000), alpha = 0.15) +
         # geom_ribbon(aes(x = date, ymin = mn_ * .99, ymax = close), alpha = 0.15) + #, fill = '#56CC9D'
         geom_line(aes(x = date, y = close)) + #, colour = '#FF7851'
         scale_x_date(date_labels = "%Y") +
-        facet_wrap(vars(Commodity), ncol = 1, scales = 'free') +
+        facet_wrap(vars(CommodityName), ncol = 1, scales = 'free') +
         scale_y_continuous(labels = scales::label_number()) +
         labs(x = '', y = '') +
         theme_minimal() +
@@ -1044,6 +944,7 @@ server <- function(input, output, session) {
       ) %>% layout(
         dragmode = FALSE
       )#%>% style(hoverinfo = "none", traces = 1)
+    
     
     
   })
@@ -1190,11 +1091,11 @@ server <- function(input, output, session) {
     
     ## load data
     dt_0 <- fmpc_security_profile(input$mstrSmbl)
-    dt_1 <- fmpc_price_history(symbols = input$mstrSmbl, startDate = -1, endDate = Sys.Date()) %>%
+    dt_1 <- fmpc_price_history(symbols = input$mstrSmbl, startDate = "1995-01-01", endDate = Sys.Date()) %>%
       select(symbol, date, close) %>% mutate(close = round(close , 2))
-    dt_2 <- fmpc_financial_bs_is_cf(symbols = input$mstrSmbl, statement = 'income', quarterly = FALSE, limit = -1)
-    dt_3 <- fmpc_financial_bs_is_cf(symbols = input$mstrSmbl, statement = 'balance', quarterly = FALSE, limit = -1)
-    dt_4 <- fmpc_financial_bs_is_cf(symbols = input$mstrSmbl, statement = 'cashflow', quarterly = FALSE, limit = -1)
+    dt_2 <- fmpc_financial_bs_is_cf(symbols = input$mstrSmbl, statement = 'income', quarterly = FALSE, limit = 25)
+    dt_3 <- fmpc_financial_bs_is_cf(symbols = input$mstrSmbl, statement = 'balance', quarterly = FALSE, limit = 25)
+    dt_4 <- fmpc_financial_bs_is_cf(symbols = input$mstrSmbl, statement = 'cashflow', quarterly = FALSE, limit = 25)
     f_dt <- dt_2 %>% inner_join(dt_3, by = c('symbol', 'calendarYear')) %>% inner_join(
       dt_4 %>% select(-netIncome, -inventory, -depreciationAndAmortization),
       by = c('symbol', 'calendarYear')

@@ -15,7 +15,6 @@ library(RSQLite)
 library(sodium)
 library(thematic)
 library(shinybrowser)
-library(shinyjs)
 
 
 # load API keys
@@ -676,7 +675,7 @@ tabPanel(
 server <- function(input, output, session) {
 
   # shinyjs::toggleClass(selector = '.navbar-nav', class = "navbar-nav")
-  
+  con <- dbConnect(RSQLite::SQLite(), "datadb.db")
   i_mstrSmbl <- reactiveVal(NULL)
   
   ## data price
@@ -769,49 +768,25 @@ server <- function(input, output, session) {
     # 15YearFixedRateMortgageAverage
   
   output$ecn <- renderPlotly({
+    start <- Sys.time()
+    result <- dbGetQuery(con, "SELECT * FROM economic_indicators WHERE Indicator in ('realGDP',
+         'realGDPPerCapita',
+         'federalFunds',
+         'CPI',
+         'inflation',
+         'consumerSentiment',
+         'unemploymentRate',
+         'commercialBankInterestRateOnCreditCardPlansAllAccounts',
+         '30YearFixedRateMortgageAverage',
+         'retailSales')"
+                         ) %>% mutate(date = as.Date(date), date_added = as.Date(date_added))
+    last_run_date <- as.Date(result %>% summarise(last_date_added = max(date_added)) %>% pull(last_date_added))
     
-    for (i in c(
-      'realGDP',
-      'realGDPPerCapita',
-      'federalFunds',
-      'CPI',
-      'inflation',
-      'consumerSentiment',
-      'unemploymentRate',
-      'commercialBankInterestRateOnCreditCardPlansAllAccounts',
-      '30YearFixedRateMortgageAverage',
-      'retailSales'
-    )) {
-      tmp <- general.APIcall(endpoint = 'Econ', symbol = i) %>% mutate(Indicator = i)
-      
-      if (exists("d_")) {
-        d_ <- rbind(d_, tmp)
-      } else {
-        d_ <- tmp
-      }
+    if (Sys.Date() - as.Date(last_run_date) > 30){
+      source(createdb.R)
     }
-    
-    d_ <- d_ %>% mutate(
-      date = as.Date(date),
-      value = round(value, 2),
-      Indicator = case_when(
-        Indicator == 'realGDP' ~ 'Real Gross Domestic Product (USD)',
-        Indicator == 'realGDPPerCapita' ~ 'Real GDP Per Capita (USD)',
-        Indicator == 'federalFunds' ~ 'Federal Fund Rate (%)',
-        Indicator == 'CPI' ~ 'Consumer Price Index',
-        Indicator == 'inflation' ~ 'Inflation Rate (%)',
-        Indicator == 'consumerSentiment' ~ 'Consumer Sentiment Index',
-        Indicator == 'unemploymentRate' ~ 'Unemployment Rate (%)',
-        Indicator == '30YearFixedRateMortgageAverage' ~ '30-Year Fixed Rate Mortgage Average (%)',
-        Indicator == 'retailSales' ~ 'Retail Sales',
-        Indicator == 'commercialBankInterestRateOnCreditCardPlansAllAccounts' ~ 'Commercial Credit Card Bank Interest (%)',
-        TRUE ~ Indicator  # Keep original if no match
-      )
-    )
-    
-    
-    
-    p <- d_ %>% ggplot() +
+
+    p <- result %>% ggplot() +
       # geom_area(aes(x = date, y = close, ymin = 10000), alpha = 0.15) +
       # geom_ribbon(aes(x = date, ymin = mn_ * .97, ymax = close), alpha = 0.15) + #, fill = '#56CC9D'
       geom_line(aes(x = date, y = value)) + #, colour = '#FF7851'
@@ -836,6 +811,8 @@ server <- function(input, output, session) {
           )
         )
       )
+    
+    print(Sys.time() - start)
     
     return(ggplotly(p) %>% 
              config(

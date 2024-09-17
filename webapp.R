@@ -93,6 +93,8 @@ ui <- fluidPage(
         padding-right: 0;
       }
       
+      
+      
     "
     )
   )) 
@@ -158,303 +160,341 @@ ui <- fluidPage(
     ))), 
     
     #### tab intro ----
-    tabPanel(title = "Intro",
-             id = "Intro", 
-             div(fluidRow(
-      column(width = body_width, offset = (12 - body_width)/2, #### econ/markets/cmmdts ----
-             # more styling
-             verticalLayout(div(
-               class = "dashboard-box", div(
-                 class = "dashboard-box-content",
-                 div(
-                   class = "dashboard-box-header",
-                   h4(class = "dashboard-box-title", 'Global Market Index'),
-                   actionButton("info_mrkts", "ℹ️", class = "dashboard-info-button")
-                 ),
-                 div(
-                   class = "dashboard-plot-container",
-                   style = "max-width: 900px; width: 100%; margin: 0 auto;",
-                   plotlyOutput('mrkts', height = '550px')
-                 )
-               )
-             )))
-    )), 
-  fluidRow(column(width = body_width, offset = (12 - body_width)/2, verticalLayout(div(
-    class = "dashboard-box", div(
-      class = "dashboard-box-content",
+    tabPanel(
+      title = "Intro",
+      id = "Intro",
       div(
-        class = "dashboard-box-header",
-        h4(class = "dashboard-box-title", 'Economic Indicators'),
-        actionButton("info_ecn", "ℹ️", class = "dashboard-info-button")
-      ),
-      div(
-        class = "dashboard-plot-container",
-        style = "max-width: 1200px; width: 100%; margin: 0 auto;",
-        plotlyOutput('ecn', height = '2550px')
-      )
-    )
-  )))), 
-  fluidRow(column(width = body_width, offset = (12 - body_width)/2, verticalLayout(div(
-    class = "dashboard-box", div(
-      class = "dashboard-box-content",
-      div(
-        class = "dashboard-box-header",
-        h4(class = "dashboard-box-title", 'Economic Indicators'),
-        actionButton("info_cmmdts", "ℹ️", class = "dashboard-info-button")
-      ),
-      div(
-        class = "dashboard-plot-container",
-        style = "max-width: 1200px; width: 100%; margin: 0 auto;",
-        plotlyOutput('cmdts', height = '1050px')
-      )
-    )
-  ))
-  )),
-  #### news/press ----
-  fluidRow(column(
-    width = body_width,
-    offset = (12 - body_width)/2,
-    tabsetPanel(
-      type = "tabs",
-      tabPanel("News", uiOutput("nws")),
-      tabPanel("Press Release", uiOutput('prssRls'))
-      
-    )
-  ))
-  ), 
-  #### tab general ----
-  tabPanel(title = 'General', 
-           id = "General",
-    fluidRow(
-             column(width = body_width, offset = (12 - body_width)/2,
-    fluidRow(
-    column(
-      width = 8,
-      style = "padding: 25px; padding-top: 5px;",
-      verticalLayout(
+        class = "container-fluid",
+        style = "max-width: 1200px; margin: auto;",
+        
+        # First row with two plots side by side
         div(
-          class = "ncontainer",
-          style = "width: 100%",
-          div(class = "n-content", style = "width: 100%", plotlyOutput('stkP'))
-        ),
-        div(
-          class = "ncontainer",
-          style = "width: 100%; overflow-x: auto;",
+          class = "row mb-4",
+          # Commodities
           div(
-            class = "n-content",
-            style = "width: 100%; margin: auto;",
-            tableOutput("fnnclSmmry")
+            class = "col-md-6",
+            div(
+              class = "card shadow-sm",
+              div(
+                class = "card-body",
+                h5(class = "card-title d-flex justify-content-between align-items-center", 
+                   'Commodities',
+                   # actionButton("info_cmmdts", "ℹ️", class = "btn btn-sm btn-outline-secondary")
+                ),
+                plotlyOutput('cmdts', height = '600px')
+              )
+            )
+          ),
+          
+          # Global Market Index
+          div(
+            class = "col-md-6",
+            div(
+              class = "card shadow-sm",
+              div(
+                class = "card-body",
+                h5(class = "card-title d-flex justify-content-between align-items-center", 
+                   'Global Market Index',
+                   # actionButton("info_mrkts", "ℹ️", class = "btn btn-sm btn-outline-secondary")
+                ),
+                plotlyOutput('mrkts', height = '600px')
+              )
+            )
           )
         ),
-        div(class = "ncontainer", div(class = "n-content", uiOutput('dscrpt')))
         
-      )
-    ),
-    column(
-      width = 4,
-      style = "padding: 25px; padding-top: 5px;",
-      verticalLayout(
-        tabsetPanel(
-          type = "tabs",
-          
-          tabPanel("News", uiOutput('stkNws')),
-          tabPanel("Press Release", uiOutput('stkPrs'))
+        # Second row with one plot underneath
+        div(
+          class = "row",
+          # Economic Indicators
+          div(
+            class = "col-12",
+            div(
+              class = "card shadow-sm",
+              div(
+                class = "card-body",
+                h5(class = "card-title d-flex justify-content-between align-items-center", 
+                   'Economic Indicators',
+                   # actionButton("info_ecn", "ℹ️", class = "btn btn-sm btn-outline-secondary")
+                ),
+                plotlyOutput('ecn', height = '1600px')
+              )
+            )
+          )
         ),
-        tableOutput("prfl")
         
+        # News/Press Release
+        div(
+          class = "row mt-4",
+          div(
+            class = "col-12",
+            tabsetPanel(
+              type = "tabs",
+              tabPanel("News", uiOutput("nws")),
+              tabPanel("Press Release", uiOutput('prssRls'))
+            )
+          )
+        )
+      )
+    ), 
+  #### tab general ----
+  tabPanel(
+    title = "General",
+    id = "General",
+    div(
+      class = "container-fluid",
+      style = "max-width: 1200px; margin: auto;",
+      
+      div(
+        class = "row",
+        
+        # Left column (8 units wide)
+        div(
+          class = "col-md-8",
+          div(
+            class = "card shadow-sm mb-4",
+            div(
+              class = "card-body",
+              h5(class = "card-title", "Stock Price"),
+              plotlyOutput('stkP')
+            )
+          ),
+          div(
+            class = "card shadow-sm mb-4",
+            div(
+              class = "card-body",
+              h5(class = "card-title", "Financial Summary"),
+              div(style = "overflow-x: auto;", tableOutput("fnnclSmmry"))
+            )
+          ),
+          div(
+            class = "card shadow-sm mb-4",
+            div(
+              class = "card-body",
+              h5(class = "card-title", "Description"),
+              uiOutput('dscrpt')
+            )
+          ),
+          div(
+            class = "card shadow-sm",
+            div(
+              class = "card-body",
+              h5(class = "card-title", "Profile"),
+              tableOutput("prfl")
+            )
+          )
+        ),
+        
+        # Right column (4 units wide)
+        div(
+          class = "col-md-4",
+          div(
+            class = "card shadow-sm",
+            div(
+              class = "card-body",
+              tabsetPanel(
+                type = "tabs",
+                tabPanel("News", uiOutput('stkNws')),
+                tabPanel("Press Release", uiOutput('stkPrs'))
+              )
+            )
+          )
+        )
       )
     )
-  ), 
-             )
-    )
-  ), 
+  ),
   #### tab fundamentals ----
-  tabPanel(title = 'Fundamentals',
-           id = "Fundamentals",
-           
-           fluidRow(column(width = body_width, offset = (12 - body_width)/2,
-           sidebarLayout(
-             sidebarPanel(
-               selectInput(
-                 'fndmtlsMtrics',
-                 "Display Fundamentals: ",
-                 choices = c(
-                   'revenue',
-                   'operatingIncome',
-                   'netIncome',
-                   'freeCashFlow',
-                   'inventory',
-                   'dividendsPaid',
-                   'weightedAverageShsOutDil',
-                   'propertyPlantEquipmentNet',
-                   'cashAndCashEquivalents',
-                   'totalAssets',
-                   'interestExpense',
-                   'totalLiabilities',
-                   'retainedEarnings',
-                   'debtRepayment',
-                   'totalDebt',
-                   'longTermDebt',
-                   'capitalExpenditure',
-                   'netRepurchases',
-                   'netInvestments',
-                   'stockBasedCompensation',
-                   'netAcquisitions',
-                   'researchAndDevelopmentExpenses'
-                 ),
-                 multiple = T,
-                 selected = c(
-                   'freeCashFlow',
-                   'netIncome',
-                   'OperatingIncome',
-                   'dividendsPaid',
-                   'stockBasedCompensation'
-                 )
-               ),
-               sliderInput(
-                 'fndmtlsSldr',
-                 "Window: ",
-                 min = 1995,
-                 max = as.integer(format(Sys.Date(), '%Y')),
-                 value = c(
-                   2007,
-                   as.integer(format(Sys.Date(), '%Y'))
-                 ),
-                 sep = '',
-                 animate = F,
-                 step = 1
-               ),
+  tabPanel(
+    title = 'Fundamentals',
+    id = "Fundamentals",
+    div(
+      class = "container-fluid",
+      style = "max-width: 1400px; margin: auto;",
+      
+      div(
+        class = "row",
+        
+        # Sidebar
+        div(
+          class = "col-md-3",
+          div(
+            class = "card shadow-sm mb-4",
+            div(
+              class = "card-body",
+              h5(class = "card-title", "Controls"),
+              selectInput(
+                'fndmtlsMtrics',
+                "Display Fundamentals:",
+                choices = c(
+                  'revenue', 'operatingIncome', 'netIncome', 'freeCashFlow', 'inventory',
+                  'dividendsPaid', 'weightedAverageShsOutDil', 'propertyPlantEquipmentNet',
+                  'cashAndCashEquivalents', 'totalAssets', 'interestExpense', 'totalLiabilities',
+                  'retainedEarnings', 'debtRepayment', 'totalDebt', 'longTermDebt',
+                  'capitalExpenditure', 'netRepurchases', 'netInvestments',
+                  'stockBasedCompensation', 'netAcquisitions', 'researchAndDevelopmentExpenses'
+                ),
+                multiple = TRUE,
+                selected = c('freeCashFlow', 'netIncome', 'OperatingIncome', 'dividendsPaid', 'stockBasedCompensation')
+              ),
+              sliderInput(
+                'fndmtlsSldr',
+                "Window:",
+                min = 1995,
+                max = as.integer(format(Sys.Date(), '%Y')),
+                value = c(2007, as.integer(format(Sys.Date(), '%Y'))),
+                sep = '',
+                animate = FALSE,
+                step = 1
+              ),
               checkboxInput('fndmtlsLg', 'Log Scale', FALSE),
               selectInput(
                 'sctr',
-                'Comparison Cohort: ',
+                'Comparison Cohort:',
                 choices = c(
-                  # 'Reported Currency',
-                  'All Sectors',
-                  "Healthcare",
-                  "Basic Materials",
-                  "Industrials",
-                  "Consumer Cyclical",
-                  "Technology",
-                  "Real Estate",
-                  "Consumer Defensive",
-                  "Communication Services",
-                  "Energy",
-                  #"Industrial Goods",
-                  "Financial"
-
+                  'All Sectors', "Healthcare", "Basic Materials", "Industrials",
+                  "Consumer Cyclical", "Technology", "Real Estate", "Consumer Defensive",
+                  "Communication Services", "Energy", "Financial"
                 ),
                 selected = 'All Sectors'
               )
-             ),
-           
-           ## more styling
-           
-           mainPanel(verticalLayout(div(
-             class = "ncontainer",
-             div(class = "n-content", style = "max-width: 1400px; width: 80%; margin: 0 auto;", plotlyOutput('stkFndmt'))
-           )))
-           )
-           )
-           ), fluidRow(column(
-             width = 10,
-             offset = 1,
-             style = "align: center;",
-             div(class = "ncontainer", div(
-               class = "n-content",
-               
-               plotOutput('stkFndmntlsRltv', width = "95%", height = "700px")
-             ))
-           )), 
-           fluidRow(#div(class = "ncontainer", 
-                        #div(
-             #lass = "n-content", 
-             column(
-             width = 10,
-             offset = 1,
-             style = "align: center;",
-             
-               # DTOutput('stkFndmntlsTbl',
-               #          width = "95vw",
-               #          height = "700px")
-               tabsetPanel(
-                 type = "tabs",
-                 tabPanel("Income", div(DTOutput(
-                   'stkInc_', width = "95%", height = "700px"
-                 ))),
-                 tabPanel("Balance", DTOutput(
-                   'stkBal_', width = "95%", height = "700px"
-                 )),
-                 tabPanel("Cash Flow", DTOutput(
-                   'stkCF_', width = "95%", height = "700px"
-                 ))
-               )
-             )
-             #)
-           #)
-           )
-           
-           ),
+            )
+          )
+        ),
+        
+        # Main content
+        div(
+          class = "col-md-9",
+          div(
+            class = "card shadow-sm mb-4",
+            div(
+              class = "card-body",
+              h5(class = "card-title", "Stock Fundamentals"),
+              plotlyOutput('stkFndmt')
+            )
+          ),
+          div(
+            class = "card shadow-sm mb-4",
+            div(
+              class = "card-body",
+              h5(class = "card-title", "Relative Fundamentals"),
+              plotOutput('stkFndmntlsRltv', height = "600px")
+            )
+          ),
+          div(
+            class = "card shadow-sm",
+            div(
+              class = "card-body",
+              h5(class = "card-title", "Financial Statements"),
+              tabsetPanel(
+                type = "tabs",
+                tabPanel("Income", DTOutput('stkInc_', height = "600px")),
+                tabPanel("Balance", DTOutput('stkBal_', height = "600px")),
+                tabPanel("Cash Flow", DTOutput('stkCF_', height = "600px"))
+              )
+            )
+          )
+        )
+      )
+    )
+  ),
   
 #### tab model ----
 tabPanel(
   title = "Model",
   id = "Model",
-  
-  fluidRow(column(width = body_width, offset = (12 - body_width)/2,
-  sidebarLayout(
-    sidebarPanel(
-      sliderInput(
-        "i_stkMdlSldr",
-        "Window: ",
-        min = as.Date('1995-01-01', '%Y-%m-%d'),
-        max = as.Date(Sys.Date(), '%Y-%m-%d'),
-        value = c(
-          as.Date('2007-01-01', '%Y-%m-%d'),
-          as.Date(Sys.Date(), '%Y-%m-%d')
-        ),
-        animate = F,
-        timeFormat = '%Y-%m-%d'
-      ),
-      radioButtons(
-        'i_mdlMtrc',
-        "Profit Metric (per Share): ",
-        choices = c('Net Income' = 'epsdiluted', 
-                    'Free Cash Flow' = 'fcfps', 
-                    'Operating Earnings' = 'operatingps', 
-                    'Revenue' = 'revenueps'),
-        selected = 'epsdiluted',
-        inline = TRUE
-      ),
-      numericInput(
-        'i_mdlMltpl',
-        'Set Multiple: ',
-        value = 0,
-        min = 0,
-        max = 1000,
-        step = 1
-      ),
-      checkboxInput(
-        'i_mdlLg',
-        'Log Scale',
-        FALSE
-      )
+  div(
+    class = "container-fluid",
+    style = "max-width: 1400px; margin: auto;",
+    
+    div(
+      class = "row",
       
-    ),
-    mainPanel(
-      verticalLayout(
-        div(class = "ncontainer",
-            div(class = "n-content",
-                
-              plotlyOutput('stkMdl')
+      # Sidebar
+      div(
+        class = "col-md-3",
+        div(
+          class = "card shadow-sm mb-4",
+          div(
+            class = "card-body",
+            h5(class = "card-title", "Model Controls"),
+            sliderInput(
+              "i_stkMdlSldr",
+              "Window:",
+              min = as.Date('1995-01-01', '%Y-%m-%d'),
+              max = as.Date(Sys.Date(), '%Y-%m-%d'),
+              value = c(
+                as.Date('2007-01-01', '%Y-%m-%d'),
+                as.Date(Sys.Date(), '%Y-%m-%d')
+              ),
+              animate = FALSE,
+              timeFormat = '%Y-%m-%d'
+            ),
+            radioButtons(
+              'i_mdlMtrc',
+              "Profit Metric (per Share):",
+              choices = c('Net Income' = 'epsdiluted', 
+                          'Free Cash Flow' = 'fcfps', 
+                          'Operating Earnings' = 'operatingps', 
+                          'Revenue' = 'revenueps'),
+              selected = 'epsdiluted',
+              inline = TRUE
+            ),
+            numericInput(
+              'i_mdlMltpl',
+              'Overwrite Multiple:',
+              value = 0,
+              min = 0,
+              max = 1000,
+              step = 1
+            ),
+            numericInput(
+              'i_mdlSplns',
+              'Set Smoothness:',
+              min = 1,
+              max = 7,
+              step = 1,
+              value = 2
+            ),
+            dateInput(
+              'i_trgtFrct',
+              'Set Forecast End:',
+              min = as.Date(Sys.Date() + 180),
+              max = as.Date(Sys.Date() + 3600),
+              value = as.Date(Sys.Date() + 360 * 3),
+              format = "yyyy-mm",
+              weekstart = 1,
+              startview = "year"
+            ),
+            checkboxInput(
+              'i_mdlLg',
+              'Log Scale',
+              FALSE
             )
-        ),
-      tableOutput('stkMdlTbl')
+          )
+        )
+      ),
       
+      # Main content
+      div(
+        class = "col-md-9",
+        div(
+          class = "card shadow-sm mb-4",
+          div(
+            class = "card-body",
+            h5(class = "card-title", "Stock Model"),
+            plotlyOutput('stkMdl')
+          )
+        ),
+        div(
+          class = "card shadow-sm",
+          div(
+            class = "card-body",
+            h5(class = "card-title", "Model Data"),
+            tableOutput('stkMdlTbl')
+          )
+        )
       )
     )
-  )
-  )
   )
 ),
 
@@ -462,178 +502,209 @@ tabPanel(
 tabPanel(
   title = "Valuation",
   id = "Valuation",
-  fluidRow(column(width = body_width, offset = (12 - body_width)/2,
-  sidebarLayout(
-    sidebarPanel(
-      width = 3,
-      selectInput(
-        "i_vltnSldr",
-        "Select Facets: ",
-        choices = c(
-          "Free Cash Flow" = "P-FCF",
-          "Net Income" = "PE",
-          "Enterprise Value" = "EV-FCF",
-          "Revenue" = "P-REVENUE",
-          "Operating Income" = "P-OP",
-          "Dividends" = "P-DIV",
-          "Book Value" = "P-BOOK",
-          "Debt" = "P-DEBT"
-        ),
-        selected = c("P-FCF", "PE", "EV-FCF", "P-BOOK", "P-OP"),
-        multiple = TRUE,
-        selectize = T
-      ),
-      sliderInput(
-        "i_stkVltnSldr",
-        "Window: ",
-        min = as.Date('1995-01-01', '%Y-%m-%d'),
-        max = as.Date(Sys.Date(), '%Y-%m-%d'),
-        value = c(
-          as.Date('2007-01-01', '%Y-%m-%d'),
-          as.Date(Sys.Date(), '%Y-%m-%d')
-        ),
-        animate = F,
-        timeFormat = '%Y-%m-%d'
-      ),
-      numericInput(
-        'i_vltnMvngAvg',
-        'Set Moving Average: ',
-        value = 2,
-        min = 2,
-        max = 15,
-        step = 1
-      ),
-      checkboxInput('i_vltnLg', 'Log Scale', FALSE)
-      
-    ),
+  div(
+    class = "container-fluid",
+    style = "max-width: 1400px; margin: auto;",
     
-    mainPanel(width = 9, verticalLayout(div(class = "ncontainer", div(
-      class = "n-content",
-      column(
-        width = 12,
-       # style = "display: flex; flex-direction: column; align-items: center;",
-        plotlyOutput('vltn', width = "95%", height = "1500px")
+    div(
+      class = "row",
+      
+      # Sidebar
+      div(
+        class = "col-md-3",
+        div(
+          class = "card shadow-sm mb-4",
+          div(
+            class = "card-body",
+            h5(class = "card-title", "Valuation Controls"),
+            selectInput(
+              "i_vltnSldr",
+              "Select Facets:",
+              choices = c(
+                "Free Cash Flow" = "P-FCF",
+                "Net Income" = "PE",
+                "Enterprise Value" = "EV-FCF",
+                "Revenue" = "P-REVENUE",
+                "Operating Income" = "P-OP",
+                "Dividends" = "P-DIV",
+                "Book Value" = "P-BOOK",
+                "Debt" = "P-DEBT"
+              ),
+              selected = c("P-FCF", "PE", "EV-FCF", "P-BOOK", "P-OP"),
+              multiple = TRUE,
+              selectize = TRUE
+            ),
+            sliderInput(
+              "i_stkVltnSldr",
+              "Window:",
+              min = as.Date('1995-01-01', '%Y-%m-%d'),
+              max = as.Date(Sys.Date(), '%Y-%m-%d'),
+              value = c(
+                as.Date('2007-01-01', '%Y-%m-%d'),
+                as.Date(Sys.Date(), '%Y-%m-%d')
+              ),
+              animate = FALSE,
+              timeFormat = '%Y-%m-%d'
+            ),
+            numericInput(
+              'i_vltnMvngAvg',
+              'Set Moving Average:',
+              value = 2,
+              min = 2,
+              max = 15,
+              step = 1
+            ),
+            checkboxInput('i_vltnLg', 'Log Scale', FALSE)
+          )
+        )
+      ),
+      
+      # Main content
+      div(
+        class = "col-md-9",
+        div(
+          class = "card shadow-sm",
+          div(
+            class = "card-body",
+            h5(class = "card-title", "Valuation Chart"),
+            plotlyOutput('vltn', height = "1500px")
+          )
+        )
       )
-    ))))
+    )
   )
-  )
-  )
-), 
+),
 
 #### tab capital allocation ----
 tabPanel(
   title = "Capital Allocation",
   id = "Capital Allocation",
-  fluidRow(column(width = body_width, offset = (12 - body_width)/2,
-  sidebarLayout(
-    sidebarPanel(
-      selectInput(
-        'cptlAllctnMtrics',
-        "Display Activity: ",
-        choices = c(
-          "capitalExpenditure",
-          "dividendsPaid",
-          "netDebtRepayment",
-          "netAcquisitions",
-          "netInvestments",
-          "netRepurchases"
-          
-        ),
-        multiple = T, selected = c("capitalExpenditure",
-                                   "dividendsPaid",
-                                   "netAcquisitions",
-                                   "netRepurchases")
-      ), sliderInput(
-        'cptlAllctnSldr',
-        "Window: ",
-        min = 1995,
-        max = as.integer(format(Sys.Date(), '%Y')),
-        value = c(2007, as.integer(format(Sys.Date(
-          
-        ), '%Y'))),
-        sep = '',
-        animate = F,
-        step = 1
-      ), ), mainPanel(verticalLayout(div(class = "ncontainer", div(
-        class = "n-content",
-        column(
-          width = 12,
-          style = "display: flex; flex-direction: column; align-items: center;",
-          plotlyOutput('cptlAllctn', width = "95%", height = "650px")
-          
+  div(
+    class = "container-fluid",
+    style = "max-width: 1400px; margin: auto;",
+    
+    div(
+      class = "row",
+      
+      # Sidebar
+      div(
+        class = "col-md-3",
+        div(
+          class = "card shadow-sm mb-4",
+          div(
+            class = "card-body",
+            h5(class = "card-title", "Capital Allocation Controls"),
+            selectInput(
+              'cptlAllctnMtrics',
+              "Display Activity:",
+              choices = c(
+                "Capital Expenditure" = "capitalExpenditure",
+                "Dividends Paid" = "dividendsPaid",
+                "Net Debt Repayment" = "netDebtRepayment",
+                "Net Acquisitions" = "netAcquisitions",
+                "Net Investments" = "netInvestments",
+                "Net Repurchases" = "netRepurchases"
+              ),
+              multiple = TRUE,
+              selected = c("capitalExpenditure", "dividendsPaid", "netAcquisitions", "netRepurchases")
+            ),
+            sliderInput(
+              'cptlAllctnSldr',
+              "Window:",
+              min = 1995,
+              max = as.integer(format(Sys.Date(), '%Y')),
+              value = c(2007, as.integer(format(Sys.Date(), '%Y'))),
+              sep = '',
+              animate = FALSE,
+              step = 1
+            )
+          )
         )
-      ))))
+      ),
+      
+      # Main content
+      div(
+        class = "col-md-9",
+        div(
+          class = "card shadow-sm",
+          div(
+            class = "card-body",
+            h5(class = "card-title", "Capital Allocation Chart"),
+            plotlyOutput('cptlAllctn', height = "650px")
+          )
+        )
+      )
+    )
   )
-  )
-  )
-  ), 
+),
 
 #### transcripts ----
 tabPanel(
   title = "Transcripts",
   id = "Transcripts",
-  fluidRow(column(width = body_width, offset = (12 - body_width)/2,
-  sidebarLayout(
+  div(
+    class = "container-fluid",
+    style = "max-width: 1400px; margin: auto;",
     
-    sidebarPanel(
-      numericInput(
-        "trnscrptYr",
-        "Select Year: ",
-        value = as.integer(format(Sys.Date(), "%Y")),
-        min = 1990,
-        max = as.integer(format(Sys.Date(), "%Y")) + 2,
-        step = 1
+    div(
+      class = "row",
+      
+      # Sidebar
+      div(
+        class = "col-md-3",
+        div(
+          class = "card shadow-sm mb-4",
+          div(
+            class = "card-body",
+            h5(class = "card-title", "Transcript Controls"),
+            numericInput(
+              "trnscrptYr",
+              "Select Year:",
+              value = as.integer(format(Sys.Date(), "%Y")),
+              min = 1990,
+              max = as.integer(format(Sys.Date(), "%Y")) + 2,
+              step = 1
+            ),
+            numericInput(
+              "trnscrptQrtr",
+              "Select Quarter:",
+              value = 1,
+              min = 1,
+              max = 4,
+              step = 1
+            ),
+            hr(),
+            h6("AI Assistant"),
+            textAreaInput(
+              "i_oai",
+              "Ask the AI assistant:",
+              rows = 3,
+              value = "Summarise material information.",
+              placeholder = "Summarise the quarter's material investor information."
+            ),
+            actionButton('oaiBtn', 'Submit', class = "btn btn-primary mt-2", disabled = TRUE),
+            hr(),
+            h6("Chat History"),
+            uiOutput("chtHst")
+          )
+        )
       ),
-      numericInput(
-        "trnscrptQrtr",
-        "Select Quarter: ",
-        value = 1,
-        min = 1,
-        max = 4,
-        step = 1
-      ),
-      # fluidRow(column(
-      #   width = 12,
-      #   offset = 0,
-      #   style = "width: auto;",
-
-           
-      div(class = "ncontainer", div(
-        class = "n-content",
-        textAreaInput(
-          "i_oai",
-          "Ask the AI assistant: ",
-          rows = 3,
-          value = "Summarise material information.",
-          placeholder = "Summarise the quarter's material investor information.", 
-        ),
-        actionButton('oaiBtn', 'Submit', disabled = TRUE)
-      )),
-      hr(),
       
-      
-      div(class = "ncontainer", div(
-        class = "n-content", h6('Chat History'), uiOutput("chtHst")
-      ))
-      
-      # )
-      # )
-  ),
-  mainPanel(verticalLayout(div(
-    class = "ncontainer", div(class = "n-content", uiOutput('trnscrpt'), )
-  ),  
-  # div(class = "main-content",  # Add class for main content
-  #      lapply(1:100, function(i) {
-  #        p(paste("This is paragraph number", i))
-  #      }))
-  # 
+      # Main content
+      div(
+        class = "col-md-9",
+        div(
+          class = "card shadow-sm",
+          div(
+            class = "card-body",
+            h5(class = "card-title", "Transcript"),
+            uiOutput('trnscrpt')
+          )
+        )
+      )
+    )
   )
-  
-  
-  ))
-  )
-  )
-  ), 
+),
   #### tab other ----
   tabPanel(title = "Other", 
            id = "Other",
@@ -721,17 +792,7 @@ server <- function(input, output, session) {
   # IBOVESPA (Brazil): ^BVSP
   # Merval (Argentina): ^MERV
   
-  sp5 <- reactive({
-    fmpc_price_history(symbols = "^GSPC", startDate = input$i_stkMdlSldr[1]) %>% select(symbol, date, close)
-  })
-  
-  indxs <- reactive({
-    fmpc_price_history(
-      symbols = c("^AXJO", "^GSPC", "^HSI", "^STOXX50E"),
-      startDate = Sys.Date() - 90
-    ) %>% select(symbol, date, close)
-  })
-  
+
   
   
   ## auto-suggest
@@ -741,7 +802,7 @@ server <- function(input, output, session) {
     selected = 'META',
     choices = autosuggest_,
     server = TRUE,
-    options = list(maxOptions = 10)
+    options = list(maxOptions = 20)
   )
   
   #### intro ----
@@ -774,9 +835,9 @@ server <- function(input, output, session) {
   
   output$ecn <- renderPlotly({
     start <- Sys.time()
-    result <- dbGetQuery(con, "SELECT * FROM economic_indicators WHERE Indicator in ('realGDP',
-         'realGDPPerCapita',
+    result <- dbGetQuery(con, "SELECT * FROM economic_indicators WHERE Indicator in ('totalVehicleSales',
          'federalFunds',
+         'industrialProductionTotalIndex',
          'CPI',
          'inflation',
          'consumerSentiment',
@@ -792,9 +853,9 @@ server <- function(input, output, session) {
     }
 
     p <- result %>% ggplot() +
-      # geom_area(aes(x = date, y = close, ymin = 10000), alpha = 0.15) +
+      geom_area(aes(x = date, y = value), alpha = 0.05, fill = '#56CC9D') +
       # geom_ribbon(aes(x = date, ymin = mn_ * .97, ymax = close), alpha = 0.15) + #, fill = '#56CC9D'
-      geom_line(aes(x = date, y = value)) + #, colour = '#FF7851'
+      geom_line(aes(x = date, y = value), colour = '#56CC9D') + #, colour = '#FF7851'
       scale_x_date(date_labels = "%Y") +
       facet_wrap(vars(IndicatorName), ncol = 1, scales = 'free') +
       scale_y_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale())) + #scales::label_number(scale = 1e-3)) +
@@ -804,6 +865,7 @@ server <- function(input, output, session) {
         # panel.spacing.x = unit(-1, "lines"),
         panel.spacing.y = unit(-0.5, "lines"),
         axis.text = element_text(face = "bold", size = 10),
+        strip.placement = "inside",
         # plot.title = element_text(face = "bold", size = 20, hjust = 0.5, margin = margin(t = 10, b = 10)),
         strip.text.x = element_text(
           face = "bold",
@@ -819,7 +881,7 @@ server <- function(input, output, session) {
     
     print(paste("Econ: ", as.character(Sys.time() - start)))
     
-    return(ggplotly(p) %>% 
+    return(ggplotly(p) %>% style(hoverinfo = "none", traces = 1 )%>%
              config(
                modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
                displaylogo = FALSE  # This removes the Plotly logo, which is often desired
@@ -829,18 +891,27 @@ server <- function(input, output, session) {
       
   })
   
+  sp5 <- reactive({
+    fmpc_price_history(symbols = "^GSPC", startDate = input$i_stkMdlSldr[1]) %>% select(symbol, date, close)
+  })
+  
+  indxs <- reactive({
+    fmpc_price_history(
+      symbols = c("^AXJO", "^GSPC", "^HSI", "^STOXX50E"),
+      startDate = Sys.Date() - 60
+    ) %>% select(symbol, date, close)
+  })
 
-  
   #### markets ----
-  
+
   output$mrkts <- renderPlotly({
-    
+
     start <- Sys.time()
-    
+
     d_ <- req(indxs())
     mins_ <- d_ %>% group_by(symbol) %>% summarise(mn_ = min(close))
     d_ <- d_ %>% left_join(mins_, by = "symbol")
-    
+
     d_ <- d_ %>%
       mutate(
         Index = case_when(
@@ -852,17 +923,17 @@ server <- function(input, output, session) {
           TRUE ~ symbol  # Keep original if no match
         )
       )
-    
-    print(paste("Markets: ", as.character(Sys.time() - start)))
-    
+
+    # print(paste("Markets: ", as.character(Sys.time() - start)))
+
     ggplotly(
       d_ %>% ggplot() +
         # geom_area(aes(x = date, y = close, ymin = 10000), alpha = 0.15) +
         geom_ribbon(aes(
           x = date, ymin = mn_ * .99, ymax = close
-        ), alpha = 0.15) + #, fill = '#56CC9D'
-        geom_line(aes(x = date, y = close)) + #, colour = '#FF7851'
-        scale_x_date(date_labels = "%m-%d") +
+        ), alpha = 0.05, fill = '#56CC9D') + #, fill = '#56CC9D'
+        geom_line(aes(x = date, y = close), colour = '#56CC9D') + #, colour = '#FF7851'
+        scale_x_date(date_labels = "%b-%d") +
         facet_wrap(vars(Index), ncol = 1, scales = 'free') +
         scale_y_continuous(labels = scales::label_number(scale = 1e-3, suffix = "K")) +
         labs(x = '', y = '') +
@@ -871,6 +942,7 @@ server <- function(input, output, session) {
           # panel.spacing.x = unit(-1, "lines"),
           # panel.spacing.y = unit(-0.5, "lines"),
           axis.text = element_text(face = "bold", size = 10),
+          strip.placement = "inside",
           # plot.title = element_text(face = "bold", size = 20, hjust = 0.5, margin = margin(t = 10, b = 10)),
           strip.text.x = element_text(
             face = "bold",
@@ -883,7 +955,7 @@ server <- function(input, output, session) {
             )
           )
         )
-    ) %>% style(hoverinfo = "none", traces = 1) %>% 
+    ) %>% style(hoverinfo = "none", traces = 1) %>%
       config(
         modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
         displaylogo = FALSE  # This removes the Plotly logo, which is often desired
@@ -907,14 +979,14 @@ server <- function(input, output, session) {
     }
     
     
-    print(paste("Commodities: ", as.character(Sys.time() - start)))
+    # print(paste("Commodities: ", as.character(Sys.time() - start)))
     
     
     ggplotly(
       result %>% ggplot() +
-        # # geom_area(aes(x = date, y = close, ymin = 10000), alpha = 0.15) +
+        geom_area(aes(x = date, y = close), alpha = 0.05, fill = '#56CC9D') +
         # geom_ribbon(aes(x = date, ymin = mn_ * .99, ymax = close), alpha = 0.15) + #, fill = '#56CC9D'
-        geom_line(aes(x = date, y = close)) + #, colour = '#FF7851'
+        geom_line(aes(x = date, y = close), colour = '#56CC9D') + #, colour = '#FF7851'
         scale_x_date(date_labels = "%Y") +
         facet_wrap(vars(CommodityName), ncol = 1, scales = 'free') +
         scale_y_continuous(labels = scales::label_number()) +
@@ -924,6 +996,7 @@ server <- function(input, output, session) {
           # panel.spacing.x = unit(-1, "lines"),
           # panel.spacing.y = unit(-0.5, "lines"),
           axis.text = element_text(face = "bold", size = 10),
+          strip.placement = "inside",
           # plot.title = element_text(face = "bold", size = 20, hjust = 0.5, margin = margin(t = 10, b = 10)),
           strip.text.x = element_text(
             face = "bold",
@@ -936,7 +1009,7 @@ server <- function(input, output, session) {
             )
           )
         )
-    ) %>% 
+    ) %>% style(hoverinfo = "none", traces = 1) %>%
       config(
         modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
         displaylogo = FALSE  # This removes the Plotly logo, which is often desired
@@ -1238,7 +1311,8 @@ server <- function(input, output, session) {
         filter(between(date, input$i_stkMdlSldr[1], input$i_stkMdlSldr[2])) %>%
         mutate(calendarYear = as.integer(substr(date, 1, 4))) %>%
         mutate(mn = min(close, na.rm = T),
-               mx = max(close, na.rm = T))
+               mx = max(close, na.rm = T),
+               mn_x = min(date, na.rm = T))
       
       fndmt <- req(stkFDta()) %>% select(symbol, calendarYear, fillingDate, !!(input$i_mdlMtrc)) %>% rename('profit' = !!(input$i_mdlMtrc))
       
@@ -1303,6 +1377,8 @@ server <- function(input, output, session) {
     #### stock summary ----
     
     output$fnnclSmmry <- renderText({
+      
+      start <- Sys.time()
       mkap <- fmpc_security_mrktcap(i_mstrSmbl(), limit = 1)
       avg.over <- 3
       
@@ -1333,7 +1409,8 @@ server <- function(input, output, session) {
           )(.x)
         ))
       
-      dt %>% select(-symbol, -date) %>% t(.) %>% kable() %>%
+      
+      t <- dt %>% select(-symbol, -date) %>% t(.) %>% kable() %>%
         kable_styling(
           bootstrap_options = c("striped", "hover", "condensed", "responsive"),
           full_width = TRUE,
@@ -1342,6 +1419,12 @@ server <- function(input, output, session) {
         column_spec(1, bold = TRUE) %>%
         row_spec(0, bold = TRUE, color = "white") %>%
         add_header_above(c("Financials" = 1, "3y Avg." = 1))
+      
+      # print(paste("General - table: ", as.character(Sys.time() - start)))
+    
+      
+      
+      return(t)
       
     })
     
@@ -1719,10 +1802,16 @@ server <- function(input, output, session) {
     
     #### model ----
     
+    df_store <- reactiveVal(NULL)
+    
     output$stkMdl <- renderPlotly({
       
       d_e <- stkMdlRctv()
+      # 
+      # print(input$i_trgtFrct)
+      # end <- as.integer(format(input$i_trgtFrct, "%Y")) - 2024
       
+      xx <- data.frame(date = as.Date(input$i_trgtFrct))
       
       p <- d_e %>%
         ggplot() +
@@ -1731,11 +1820,12 @@ server <- function(input, output, session) {
         geom_point(aes(x = fillingDate, y = Estimate),
                    colour = '#FF7851',
                    shape = 3) +
+        
         geom_smooth(
           aes(x = fillingDate, y = Estimate),
           colour = '#56CC9D',
           method = 'lm',
-          formula = y ~ splines::ns(x, 2),
+          formula = y ~ splines::ns(x, input$i_mdlSplns),
           se = F,
           fullrange = TRUE,
           linetype = 'dashed'
@@ -1747,6 +1837,16 @@ server <- function(input, output, session) {
           se = F,
           fullrange = TRUE
         ) +
+        geom_label(
+          data = xx,
+          aes(x = date, y = 500, label = ""),
+          hjust = 0,
+          vjust = 0.5,
+          label.padding = unit(0.5, "lines"),
+          label.size = 0.35,
+          color = "black",
+          fill = "white"
+        ) +
         scale_x_date(date_breaks = '1 year',
                      date_labels = "%y",
                      name = '') +
@@ -1756,7 +1856,10 @@ server <- function(input, output, session) {
           labels = scales::dollar_format(),
           name = ''
         ) +
-        coord_cartesian(ylim = c(max(d_e$mn) * 0.95, max(d_e$mx)) * 1.15, expand = T) +
+        coord_cartesian(ylim = c(max(d_e$mn) * 0.95, max(d_e$mx) * 1.15),
+                        xlim = c(max(d_e$mn_x), input$i_trgtFrct),
+                        expand = T) +
+        
         labs(title = paste(
           i_mstrSmbl(),
           ifelse(
@@ -1776,14 +1879,23 @@ server <- function(input, output, session) {
           "Annual"
         )) +
         theme_minimal()
-      # b_ <- ggplot_build(p)
-      # b_lm_ns_ <- b_[[4]]
-      # b_lm <- b_[[5]]
-      # write.csv(b_lm_ns_, 'ggplot_obj.csv')
       
+      b_ <- ggplot_build(p)
+      b_lm_ns_ <- b_$data[[4]]
+      b_lm <- b_$data[[5]]
+      
+      df_store(b_lm_ns_)
+      
+      # write.csv(b_lm_ns_, 'ggplot_obj1.csv')
+      # write.csv(b_lm, 'ggplot_obj2.csv')
+
+    #   return(p)
+    #   
+    # })
+    #   
       ggplotly(
         p
-      ) %>% style(hoverinfo = "text") %>% style(hoverinfo = "none", traces = c(1, 4,5)) %>% 
+      ) %>% style(hoverinfo = "text") %>% style(hoverinfo = "none", traces = c(1, 4,5)) %>% style(hovertemplate = "Estimate: %{y:.2f}", traces = c(4,5)) %>%
         config(
           modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
           displaylogo = FALSE  # This removes the Plotly logo, which is often desired
@@ -1791,19 +1903,19 @@ server <- function(input, output, session) {
           dragmode = FALSE
         )
     })
-    
+
     
     #### model table ----
     
     output$stkMdlTbl <- renderText({
       
-      tbl <- stkMdlRctv() %>% 
-        dplyr::distinct(calendarYear, fillingDate, profit, multiple, Estimate) %>% 
-        arrange(desc(calendarYear)) 
-      
+      tbl <- stkMdlRctv() %>%
+        dplyr::distinct(calendarYear, fillingDate, profit, multiple, Estimate) %>%
+        arrange(desc(calendarYear)) %>% na.omit(.)
+
       # write.csv(stkMdlRctv(), 'test.csv')
-      
-      tbl %>% 
+
+      tbl %>%
         kable() %>%
         kable_styling(
           bootstrap_options = c("striped", "hover", "condensed", "responsive"),
@@ -1813,6 +1925,24 @@ server <- function(input, output, session) {
         row_spec(0, bold = TRUE, color = "white") %>%
         row_spec(0:nrow(tbl), align = "c") %>%
         add_header_above(c("calendarYear" = 1, "fillingDate" = 1, "profit" = 1, "multiple" = 1, "estimate" = 1))
+
+      # x <- read.csv('ggplot_obj1.csv')
+      
+      # x %>% mutate(format(as.Date(x), "%y"))
+      # 
+      # g_tbl <- df_store() %>% mutate(yr = format(as.Date(x), "%Y"), date = format(as.Date(x), "%Y-%m-%d")) %>% select(x, y, yr, date)
+      # e_tbl <- stkMdlRctv() %>%
+      #     dplyr::distinct(calendarYear, fillingDate, profit, multiple, Estimate) %>%
+      #     arrange(desc(calendarYear))
+      # # x %>% kable() %>% kable_styling(bootstrap_options = c("striped"))
+      # 
+      # 
+      # mltpl <- stkMdlRctv() %>% distinct(multiple) %>% pull(multiple)
+      # ltst_yr <- max(e_tbl %>% na.omit(.) %>% pull(calendarYear))
+      
+      
+      
+      
     })
     
     
@@ -2114,6 +2244,9 @@ server <- function(input, output, session) {
     
   })
   
+  
+  #### AI summary ----
+  
   observeEvent(input$oaiBtn, {
     # dbExecute(con, "CREATE TABLE IF NOT EXISTS IP_user (
     #       IP TEXT,
@@ -2179,7 +2312,7 @@ server <- function(input, output, session) {
         " ",
         as.character(input$trnscrptYr),
         " earnings call transcript, focusing on key financial metrics, management's outlook, and any significant strategic changes. Provide a structured response with an executive summary, main points using bullet points and historical parallels. Consider current market conditions and the company's position in its industry when providing your analysis.",
-        " Format response in HTML for R Shiny renderUI and don't reflect this in the response (for example, for bold, use a div with appropriate style parameter). This is the transcript: ",
+        " Format response in HTML for R Shiny renderUI (for example, for bold, use a div with appropriate style parameter), don't reflect this fact in the response. Avoid wrapping in ``` quotes. End with a finished sentence. This is the transcript: ",
         # substr(
         trnscrpt_() %>% pull(content)
         # , 1, 5000)
@@ -2195,7 +2328,7 @@ server <- function(input, output, session) {
       temperature = 0.3
     )
     
-    resp_ <- list(list(role = "assistant", content = sub("```html", "", completion$choices$message.content)))
+    resp_ <- list(list(role = "assistant", content = completion$choices$message.content)) 
     updateTextAreaInput(session, "i_oai", value = "")
     
     msgs <- c(msgs, resp_)

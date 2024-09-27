@@ -17,7 +17,6 @@ library(thematic)
 # library(shinybrowser)
 library(shinyjs)
 
-
 # load API keys
 fmpc_set_token(Sys.getenv("API_FMPC"))
 Sys.setenv(OPENAI_API_KEY = Sys.getenv("API_OAI"))
@@ -31,17 +30,22 @@ Sys.setenv(OPENAI_API_KEY = Sys.getenv("API_OAI"))
 # )
 
 thematic_shiny(font = "auto")
-
+# bootswatch_themes()
 # load functions
 source('webfunctions.R')
-shinyjs:::useShinyjs()
+
+# autosuggest_ <- fmpc_symbols_available() %>% filter(type == "stock" ) %>% filter(exchangeShortName %in% c("NYSE", "NASDAQ", "JPX", "LSE", "HKSE", "ASX", "SHH", "SHZ", "XETRA")) %>% select(symbol, name)
+# # 
+# # autosuggest_ <- autosuggest_ %>% group_by(exchangeShortName, exchange) %>% summarise(n = n())
 # 
-# autosuggest_ <- fmpc_symbols_available() %>% filter(type == "stock" &
-#                                                       exchangeShortName %in% c("NYSE", "NASDAQ")) %>% pull(symbol)
-# write.csv(autosuggest_, 'availab_symbols.csv')
+# autosuggest_['name'][is.na(autosuggest_['name'])] <- ""
+# 
+# write.csv(autosuggest_ %>% mutate(name_f = paste0(name, " (", symbol, ")")), 'availab_symbols.csv', row.names = F)
+# 
 
+autosuggest_ <- read.csv('www/availab_symbols.csv') #%>% filter(symbol %in% c('AAPL', 'META'))
+autosuggest_ <- setNames(as.list(autosuggest_$symbol), autosuggest_$name_f)
 
-autosuggest_ <- read.csv('www/availab_symbols.csv') %>% pull(x)
 body_width <- 8
 
 #### shiny UI ----
@@ -54,13 +58,14 @@ ui <- fluidPage(
         .navbar-nav {
           width: 100%;
         }
-        .navbar-nav > li:nth-child(9) {
+        
+        .navbar-nav > li:nth-child(10) {
           margin-left: auto;
           margin-right: 10px;
           
         }
       }
-      .navbar-nav > li:nth-child(9) > a {
+      .navbar-nav > li:nth-child(10) > a {
         color: red !important;
       }
       .dashboard-box { border: 1px solid #ddd; padding: 20px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); background-color: #f9f9f9; }
@@ -71,7 +76,7 @@ ui <- fluidPage(
       .dashboard-plot-container { flex: 1; background-color: white; border-radius: 5px; padding: 15px; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); }
       .ncontainer { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px; display: flex; } 
       .n-content { flex: 1; }
-      .custom-container { width: 100%; background-color: #fcfcfc; /* Light gray background */ padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Bottom shade */ margin-bottom: 20px; margin-left: 0px; margin-right: 0px; }
+      .custom-container { width: 100%; background-color: #fcfcfc; /* Light gray background */ padding: 20px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Bottom shade */ margin-bottom: 20px; margin-right: 0px; }
       .news-content { overflow: hidden; /* Prevent overflow */ text-overflow: ellipsis; /* Add ellipsis for overflowed text */ white-space: normal; /* Allow text to wrap */ }
       @media (max-width: 1000px) {
         .news-container {
@@ -100,55 +105,72 @@ ui <- fluidPage(
   )) 
 , 
 
-  
-  
   navbarPage(
     
   
-    id = "navbar", theme = bs_theme(bootswatch = "minty"), 
+    id = "navbar", 
+    theme = bs_theme(bootswatch = "minty",), 
     collapsible = TRUE, 
     
     # title = "Value Quant Investment Platform - v1.0",
     
-    title = tags$img(src = "convertio.in_logo2.avif", width = "300px;", style = "margin-right: 5px;"),
+    title = tags$img(src = "logo2-removebg-preview.png", width = "300px;", style = "margin-right: 5px;"),
     
     header = div(
       class = "custom-container",
       fluidRow(
         column(
-          width = 4,
-          offset = 4,
-          style = "margin-left: 5px; margin-top: 10px;",
+          width = 12,
+          style = "display: flex; justify-content: center; align-items: center; margin-top: 10px;",
           
-          selectizeInput(
-            inputId = "mstrSmbl",
-            label = NULL,
-            # Removed label for a cleaner look
-            choices = c('META', 'MSFT', 'GOOG'),
-            multiple = FALSE,
-            selected = 'META',
-            options = list(
-              placeholder = "Type ticker symbol...",
-              onInitialize = I('function() { this.setValue(""); }')
+          div(
+            style = "display: flex; align-items: center; width: 50%;",
+            
+            div(
+              style = "flex-grow: 1; margin-right: 10px;",
+              selectizeInput(
+                inputId = "mstrSmbl",
+                label = NULL,
+                choices = NULL,
+                multiple = FALSE,
+                selected = NULL,
+                options = list(
+                  create = FALSE,
+                  placeholder = "Search company name or ticker...",
+                  maxItems = 1,
+                  onDropdownOpen = I("function($dropdown) {if (!this.lastQuery.length) {this.close(); this.settings.openOnFocus = false;}}"),
+                  onType = I("function (str) {if (str === '') {this.close();}}"),
+                  onItemAdd = I("function() {this.close();}"),
+                  onInitialize = I('function() { this.setValue(""); }')
+                ),
+                width = '100%'
+              )
             ),
-            width = '100%',
-            # style = "padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ddd;"
-          )
-        ),
-        
-    
-        column(
-          width = 2,
-          offset = 0,
-          style = "margin-left: 5px; margin-top: 10px; display: flex; align-items: center;",
-          
-          actionButton(
-            inputId = 'mstrSmblBtn',
-            label = "Search",
-            style = "padding: 10px; font-size: 16px; border-radius: 5px; border: none; cursor: pointer;"
+            
+            actionButton(
+              inputId = 'mstrSmblBtn',
+              label = NULL,
+              icon = icon("search"),
+              style = "
+            padding: 10px 20px;
+            margin-top: -10px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, box-shadow 0.3s;
+            height: 38px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          "
+            )
           )
         )
-      )), 
+      )
+    ), 
   
   
     footer = fluidRow(column(width = 10, offset = 1, tagList(
@@ -157,12 +179,38 @@ ui <- fluidPage(
         "© 2024 Value Quant Investment.",
         tags$a(href = "#href", "Visit the substack.")
       )
-    ))), 
+    ))),
     
-    #### tab intro ----
+    #### tab Welcome ----
+    
     tabPanel(
-      title = "Intro",
-      id = "Intro",
+      title = "Welcome",
+      id = "Welcome",
+      # News/Press Release
+      div(
+        class = "container-fluid",
+        style = "max-width: 1200px; margin: auto;",
+        div(
+          class = "card shadow-sm", 
+          div(
+          class = "card-body", 
+          div(
+            class = "col-12", 
+            tabsetPanel(
+            type = "tabs",
+            tabPanel("News", 
+                     uiOutput("nws")),
+            tabPanel("Press Release", 
+                     uiOutput('prssRls'))
+          ))
+        ))
+      )
+      
+    ), 
+    #### tab Macro ----
+    tabPanel(
+      title = "Macro",
+      id = "Macro",
       div(
         class = "container-fluid",
         style = "max-width: 1200px; margin: auto;",
@@ -217,24 +265,13 @@ ui <- fluidPage(
                    'Economic Indicators',
                    # actionButton("info_ecn", "ℹ️", class = "btn btn-sm btn-outline-secondary")
                 ),
-                plotlyOutput('ecn', height = '1600px')
+                plotlyOutput('ecn', height = '2200px')
               )
             )
           )
         ),
         
-        # News/Press Release
-        div(
-          class = "row mt-4",
-          div(
-            class = "col-12",
-            tabsetPanel(
-              type = "tabs",
-              tabPanel("News", uiOutput("nws")),
-              tabPanel("Press Release", uiOutput('prssRls'))
-            )
-          )
-        )
+       
       )
     ), 
   #### tab general ----
@@ -427,7 +464,8 @@ tabPanel(
                 as.Date(Sys.Date(), '%Y-%m-%d')
               ),
               animate = FALSE,
-              timeFormat = '%Y-%m-%d'
+              timeFormat = '%Y-%m-%d',
+              step = 31
             ),
             radioButtons(
               'i_mdlMtrc',
@@ -554,7 +592,8 @@ tabPanel(
               max = 15,
               step = 1
             ),
-            checkboxInput('i_vltnLg', 'Log Scale', FALSE)
+            checkboxInput('i_vltnLg', 'Log Scale', FALSE),
+            # checkboxInput('i_vltnInv', 'Yield', FALSE)
           )
         )
       ),
@@ -799,13 +838,13 @@ server <- function(input, output, session) {
   updateSelectizeInput(
     session,
     'mstrSmbl',
-    selected = 'META',
+    selected = "Meta Platforms, Inc. (META)",
     choices = autosuggest_,
     server = TRUE,
-    options = list(maxOptions = 20)
+    options = list(maxOptions = 15)
   )
   
-  #### intro ----
+  #### Macro ----
   
   #### econ ----
   
@@ -837,24 +876,34 @@ server <- function(input, output, session) {
     start <- Sys.time()
     result <- dbGetQuery(con, "SELECT * FROM economic_indicators WHERE Indicator in ('totalVehicleSales',
          'federalFunds',
-         'industrialProductionTotalIndex',
-         'CPI',
          'inflation',
+         '15YearFixedRateMortgageAverage',
+         '3MonthOr90DayRatesAndYieldsCertificatesOfDeposit',
          'consumerSentiment',
          'unemploymentRate',
          'commercialBankInterestRateOnCreditCardPlansAllAccounts',
-         '30YearFixedRateMortgageAverage',
-         'retailSales')"
-                         ) %>% mutate(date = as.Date(date), date_added = as.Date(date_added))
-    last_run_date <- as.Date(result %>% summarise(last_date_added = max(date_added)) %>% pull(last_date_added))
+         '30YearFixedRateMortgageAverage') " # AND date > '1995-01-01' ,
+                         ) %>% mutate(date = lubridate::ymd(date), date_added = lubridate::ymd(date_added))
     
-    if (Sys.Date() - as.Date(last_run_date) > 30){
+    # result <- dbGetQuery(con, "SELECT * FROM economic_indicators") %>% group_by(Indicator) %>% arrange(date) %>% mutate(value = value - dplyr::lag(value, 1)) %>% drop_na(.)
+    # 
+    # result <- result %>% group_by(Indicator) %>% summarise(s_ = stats::sd(value))
+    # 
+    
+    mins_ <- result %>% group_by(IndicatorName) %>% summarise(mn_ = min(value))
+    result <- result %>% left_join(mins_, by = "IndicatorName")
+    
+    last_run_date <- ymd(result %>% summarise(last_date_added = max(date_added)) %>% pull(last_date_added))
+    
+    if (Sys.Date() - ymd(last_run_date) > 30){
       source(createdb.R)
     }
 
     p <- result %>% ggplot() +
-      geom_area(aes(x = date, y = value), alpha = 0.05, fill = '#56CC9D') +
-      # geom_ribbon(aes(x = date, ymin = mn_ * .97, ymax = close), alpha = 0.15) + #, fill = '#56CC9D'
+      # geom_area(aes(x = date, y = value), alpha = 0.05, fill = '#56CC9D') +
+      geom_ribbon(aes(
+        x = date, ymin = mn_ * .95, ymax = value
+      ), alpha = 0.05, fill = '#56CC9D') +
       geom_line(aes(x = date, y = value), colour = '#56CC9D') + #, colour = '#FF7851'
       scale_x_date(date_labels = "%Y") +
       facet_wrap(vars(IndicatorName), ncol = 1, scales = 'free') +
@@ -879,9 +928,9 @@ server <- function(input, output, session) {
         )
       )
     
-    print(paste("Econ: ", as.character(Sys.time() - start)))
+    # print(paste("Econ: ", as.character(Sys.time() - start)))
     
-    return(ggplotly(p) %>% style(hoverinfo = "none", traces = 1 )%>%
+    return(ggplotly(p) %>% style(hoverinfo = "none", traces = seq(1, 9, 1) )%>%
              config(
                modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
                displaylogo = FALSE  # This removes the Plotly logo, which is often desired
@@ -930,7 +979,7 @@ server <- function(input, output, session) {
       d_ %>% ggplot() +
         # geom_area(aes(x = date, y = close, ymin = 10000), alpha = 0.15) +
         geom_ribbon(aes(
-          x = date, ymin = mn_ * .99, ymax = close
+          x = date, ymin = mn_ * .95, ymax = close
         ), alpha = 0.05, fill = '#56CC9D') + #, fill = '#56CC9D'
         geom_line(aes(x = date, y = close), colour = '#56CC9D') + #, colour = '#FF7851'
         scale_x_date(date_labels = "%b-%d") +
@@ -955,7 +1004,7 @@ server <- function(input, output, session) {
             )
           )
         )
-    ) %>% style(hoverinfo = "none", traces = 1) %>%
+    ) %>% style(hoverinfo = "none", traces = seq(1,4,1)) %>%
       config(
         modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
         displaylogo = FALSE  # This removes the Plotly logo, which is often desired
@@ -971,10 +1020,13 @@ server <- function(input, output, session) {
     
     start = Sys.time()
     
-    result <- dbGetQuery(con, "SELECT * FROM commodities") %>% mutate(date = as.Date(date), date_added = as.Date(date_added))
-    last_run_date <- as.Date(result %>% summarise(last_date_added = max(date_added)) %>% pull(last_date_added))
+    result <- dbGetQuery(con, "SELECT * FROM commodities") %>% mutate(date = ymd(date), date_added = ymd(date_added))
+    last_run_date <- ymd(result %>% summarise(last_date_added = max(date_added)) %>% pull(last_date_added))
     
-    if (Sys.Date() - as.Date(last_run_date) > 30){
+    mins_ <- result %>% group_by(CommodityName) %>% summarise(mn_ = min(close))
+    result <- result %>% left_join(mins_, by = "CommodityName")
+    
+    if (Sys.Date() - ymd(last_run_date) > 30){
       source(createdb.R)
     }
     
@@ -984,8 +1036,10 @@ server <- function(input, output, session) {
     
     ggplotly(
       result %>% ggplot() +
-        geom_area(aes(x = date, y = close), alpha = 0.05, fill = '#56CC9D') +
-        # geom_ribbon(aes(x = date, ymin = mn_ * .99, ymax = close), alpha = 0.15) + #, fill = '#56CC9D'
+        # geom_area(aes(x = date, y = close), alpha = 0.05, fill = '#56CC9D') +
+        geom_ribbon(aes(
+          x = date, ymin = mn_ * .95, ymax = close
+        ), alpha = 0.05, fill = '#56CC9D') +
         geom_line(aes(x = date, y = close), colour = '#56CC9D') + #, colour = '#FF7851'
         scale_x_date(date_labels = "%Y") +
         facet_wrap(vars(CommodityName), ncol = 1, scales = 'free') +
@@ -1009,7 +1063,7 @@ server <- function(input, output, session) {
             )
           )
         )
-    ) %>% style(hoverinfo = "none", traces = 1) %>%
+    ) %>% style(hoverinfo = "none", traces = c(1,2,3, 4) ) %>%
       config(
         modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
         displaylogo = FALSE  # This removes the Plotly logo, which is often desired
@@ -1041,6 +1095,7 @@ server <- function(input, output, session) {
   #### news ----
   output$nws <- renderUI({
     d_ <- general.APIcall(endpoint = "News") %>% filter(site != "ndtv.com")
+    k <- req(indxs())
     
     lapply(1:(min(30, nrow(d_))), function(i) {
       create_news_container(
@@ -1151,7 +1206,7 @@ server <- function(input, output, session) {
   observeEvent(input$mstrSmblBtn, {
     
     
-    if (input$navbar == "Intro") {
+    if (input$navbar %in% c("Welcome", "Macro")) {
       updateTabsetPanel(session, "navbar", selected = "General")
     }
     
@@ -1163,12 +1218,33 @@ server <- function(input, output, session) {
     #### data ----
     
     i_mstrSmbl(input$mstrSmbl)
-    
-    # currencies
-    fxs <- lapply(paste(c("BRL", "CAD", "CNY", "EUR", "HKD", "INR", "JPY", "KRW", "MXN", "MYR", "NOK", "SEK", "SGD", "TRY", "TWD", "ZAR"), 'USD', sep = ''), fx.APIcall)
-    pair <- unname(unlist(lapply(fxs, '[', 'symbol')))
-    rate <- unname(unlist(lapply(fxs, '[', 'price')))
-    fxs <- data.frame(symbol = pair, price = rate)
+    # 
+    # # currencies
+    # fxs <- lapply(paste(
+    #   c(
+    #     "BRL",
+    #     "CAD",
+    #     "CNY",
+    #     "EUR",
+    #     "HKD",
+    #   #  "INR",
+    #     "JPY",
+    #   #  "KRW",
+    #   #  "MXN",
+    #   #  "MYR",
+    #   #  "NOK",
+    #   #  "SEK",
+    #     "SGD",
+    #   #  "TRY",
+    #     "TWD",
+    #    # "ZAR"
+    #   ),
+    #   'USD',
+    #   sep = ''
+    # ), fx.APIcall)
+    # pair <- unname(unlist(lapply(fxs, '[', 'symbol')))
+    # rate <- unname(unlist(lapply(fxs, '[', 'price')))
+    # fxs <- data.frame(symbol = pair, price = rate)
     
     ## load data
     dt_0 <- fmpc_security_profile(input$mstrSmbl)
@@ -1183,28 +1259,29 @@ server <- function(input, output, session) {
     ) %>% select(!contains(c('.x', '.y', 'cik', 'link', 'dDate'))) %>%
       select(symbol, calendarYear, date, fillingDate, reportedCurrency, everything()) %>%
       group_by(symbol) %>% arrange(symbol, desc(calendarYear)) %>% ungroup() %>%
-      mutate(fillingDate = as.Date(fillingDate, format = "%Y-%m-%d")) %>%
+      mutate(fillingDate = ymd(fillingDate)) %>%
       mutate(calendarYear = as.integer(calendarYear)) %>%
-      mutate(across(!contains(c('calendarYear', 'Ratio', 'ratio', 'weightedAverageShsOutDil')) & where(is.numeric),
-                                                                  ~ case_when(
-                                                                    reportedCurrency == 'CNY' ~ .x * fxs[fxs['symbol'] == 'CNYUSD', 'price'],
-                                                                    reportedCurrency == 'BRL' ~ .x * fxs[fxs['symbol'] == 'BRLUSD', 'price'],
-                                                                    reportedCurrency == 'SEK' ~ .x * fxs[fxs['symbol'] == 'SEKUSD', 'price'],
-                                                                    reportedCurrency == 'EUR' ~ .x * fxs[fxs['symbol'] == 'EURUSD', 'price'],
-                                                                    reportedCurrency == 'CAD' ~ .x * fxs[fxs['symbol'] == 'CADUSD', 'price'],
-                                                                    reportedCurrency == 'TRY' ~ .x * fxs[fxs['symbol'] == 'TRYUSD', 'price'],
-                                                                    reportedCurrency == 'MXN' ~ .x * fxs[fxs['symbol'] == 'MXNUSD', 'price'],
-                                                                    reportedCurrency == 'TWD' ~ .x * fxs[fxs['symbol'] == 'TWDUSD', 'price'],
-                                                                    reportedCurrency == 'ZAR' ~ .x * fxs[fxs['symbol'] == 'ZARUSD', 'price'],
-                                                                    reportedCurrency == 'HKD' ~ .x * fxs[fxs['symbol'] == 'HKDUSD', 'price'],
-                                                                    reportedCurrency == 'SGD' ~ .x * fxs[fxs['symbol'] == 'SGDUSD', 'price'],
-                                                                    reportedCurrency == 'MYR' ~ .x * fxs[fxs['symbol'] == 'MYRUSD', 'price'],
-                                                                    reportedCurrency == 'JPY' ~ .x * fxs[fxs['symbol'] == 'JPYUSD', 'price'],
-                                                                    reportedCurrency == 'INR' ~ .x * fxs[fxs['symbol'] == 'INRUSD', 'price'],
-                                                                    reportedCurrency == 'KRW' ~ .x * fxs[fxs['symbol'] == 'KRWUSD', 'price'],
-                                                                    TRUE ~ .x
-                                                                  )
-      )) %>%
+      # mutate(across(!contains(c('calendarYear', 'Ratio', 'ratio', 'weightedAverageShsOutDil')) & where(is.numeric),
+      #                                                             ~ case_when(
+      #                                                               reportedCurrency == 'CNY' ~ .x * fxs[fxs['symbol'] == 'CNYUSD', 'price'],
+      #                                                               reportedCurrency == 'BRL' ~ .x * fxs[fxs['symbol'] == 'BRLUSD', 'price'],
+      #                                                               reportedCurrency == 'SEK' ~ .x * fxs[fxs['symbol'] == 'SEKUSD', 'price'],
+      #                                                               reportedCurrency == 'EUR' ~ .x * fxs[fxs['symbol'] == 'EURUSD', 'price'],
+      #                                                               reportedCurrency == 'CAD' ~ .x * fxs[fxs['symbol'] == 'CADUSD', 'price'],
+      #                                                               reportedCurrency == 'TRY' ~ .x * fxs[fxs['symbol'] == 'TRYUSD', 'price'],
+      #                                                               reportedCurrency == 'MXN' ~ .x * fxs[fxs['symbol'] == 'MXNUSD', 'price'],
+      #                                                               reportedCurrency == 'TWD' ~ .x * fxs[fxs['symbol'] == 'TWDUSD', 'price'],
+      #                                                               reportedCurrency == 'ZAR' ~ .x * fxs[fxs['symbol'] == 'ZARUSD', 'price'],
+      #                                                               reportedCurrency == 'HKD' ~ .x * fxs[fxs['symbol'] == 'HKDUSD', 'price'],
+      #                                                               reportedCurrency == 'SGD' ~ .x * fxs[fxs['symbol'] == 'SGDUSD', 'price'],
+      #                                                               reportedCurrency == 'MYR' ~ .x * fxs[fxs['symbol'] == 'MYRUSD', 'price'],
+      #                                                               reportedCurrency == 'JPY' ~ .x * fxs[fxs['symbol'] == 'JPYUSD', 'price'],
+      #                                                               reportedCurrency == 'INR' ~ .x * fxs[fxs['symbol'] == 'INRUSD', 'price'],
+      #                                                               reportedCurrency == 'KRW' ~ .x * fxs[fxs['symbol'] == 'KRWUSD', 'price'],
+      #                                                               reportedCurrency == "AUD" ~ .x * fxs[fxs['symbol'] == "AUDUSD", 'price']
+      #                                                               TRUE ~ .x
+      #                                                             )
+      # )) %>%
       mutate(
         netInvestments = abs(purchasesOfInvestments) - abs(salesMaturitiesOfInvestments),
         netRepurchases = abs(commonStockRepurchased) - abs(commonStockIssued),
@@ -1453,7 +1530,8 @@ server <- function(input, output, session) {
     #### stock description ----
     
     output$dscrpt <- renderUI({
-      tagList(tags$h2("Description"), tags$p(req(stkPrfl()) %>% pull(description)))
+      tagList(#tags$h2("Description"), 
+              tags$p(req(stkPrfl()) %>% pull(description)))
     })
     
     
@@ -1498,7 +1576,7 @@ server <- function(input, output, session) {
       # print(prm_user)
       #
       d_ <- req(stkPrc()) %>%
-        mutate(calendarYear = as.Date(paste0(format(date, "%Y"), "-12-31")))
+        mutate(calendarYear = ymd(paste0(format(date, "%Y"), "-12-31")))
       
       i_tr <- as.data.frame(general.APIcall(endpoint = "Insider-Trans", symbol = i_mstrSmbl()))
       
@@ -1514,7 +1592,7 @@ server <- function(input, output, session) {
             totalSold = sum(totalSold),
             total_pPurchases = sum(pPurchases),
             total_sSales = sum(sSales)
-          ) %>% mutate(calendarYear = as.Date(paste0(year, "-12-31")),
+          ) %>% mutate(calendarYear = ymd(paste0(year, "-12-31")),
                        buySellRatio = totalBought / totalSold)
       } else {
         i_tr <- data.frame(
@@ -1526,7 +1604,7 @@ server <- function(input, output, session) {
           total_pPurchases = 0,
           total_sSales = 0,
           year = "2024"
-        ) %>% mutate(calendarYear = as.Date(paste0(year, "-12-31")),
+        ) %>% mutate(calendarYear = ymd(paste0(year, "-12-31")),
                      buySellRatio = totalBought / totalSold)
       }
       
@@ -1563,7 +1641,8 @@ server <- function(input, output, session) {
                 as.character(scales::comma(total_pPurchases)),
                 '\nTotal sSales: ',
                 as.character(scales::comma(total_sSales))
-              )
+              ),
+              size = buySellRatio
             ),
             show.legend = FALSE,
             colour = '#FF7851'
@@ -1581,7 +1660,10 @@ server <- function(input, output, session) {
       #   yanchor = "top",
       #   font = list(size = 25)
       # )
-      ) %>% style(hoverinfo = "none", traces = 1)
+      ) %>% style(hoverinfo = "none", traces = 1) %>% config(
+        modeBarButtonsToRemove = c('zoom', 'select')) %>% layout(
+          dragmode = FALSE
+        )
 
 
     })
@@ -1624,7 +1706,7 @@ server <- function(input, output, session) {
     
 
     
-    #### fundamentals sector chart
+    #### fundamentals relative ----
     
     output$stkFndmntlsRltv <- renderPlot({
       app_dir <- shiny::getShinyOption("appDir")
@@ -1650,7 +1732,7 @@ server <- function(input, output, session) {
       }
       
       cohort.summary <- read.csv(read.path)  %>% mutate(
-        calendarYear = as.Date(calendarYear),
+        calendarYear = ymd(calendarYear),
         min = as.numeric(min),
         med = as.numeric(med),
         max = as.numeric(max),
@@ -1697,11 +1779,11 @@ server <- function(input, output, session) {
           data = smry,
           aes(x = fillingDate, y = Value),
           linewidth = 1,
-          colour = '#FF7851'
+          colour = '#56CC9D'
         ) +
         geom_point(data = smry,
                    aes(x = fillingDate, y = Value),
-                   colour = '#FF7851') +
+                   colour = '#56CC9D') +
         
         scale_x_date(date_breaks = "2 years", date_labels = "%y") +
         scale_y_continuous(
@@ -1811,7 +1893,7 @@ server <- function(input, output, session) {
       # print(input$i_trgtFrct)
       # end <- as.integer(format(input$i_trgtFrct, "%Y")) - 2024
       
-      xx <- data.frame(date = as.Date(input$i_trgtFrct))
+      xx <- data.frame(date = ymd(input$i_trgtFrct))
       
       p <- d_e %>%
         ggplot() +
@@ -1822,7 +1904,7 @@ server <- function(input, output, session) {
                    shape = 3) +
         
         geom_smooth(
-          aes(x = fillingDate, y = Estimate),
+          aes(x = fillingDate, y = Estimate, text = ''),
           colour = '#56CC9D',
           method = 'lm',
           formula = y ~ splines::ns(x, input$i_mdlSplns),
@@ -1831,7 +1913,7 @@ server <- function(input, output, session) {
           linetype = 'dashed'
         ) +
         geom_smooth(
-          aes(x = fillingDate, y = Estimate),
+          aes(x = fillingDate, y = Estimate, text = ''),
           colour = '#56CC9D',
           method = 'lm',
           se = F,
@@ -1842,10 +1924,10 @@ server <- function(input, output, session) {
           aes(x = date, y = 500, label = ""),
           hjust = 0,
           vjust = 0.5,
-          label.padding = unit(0.5, "lines"),
-          label.size = 0.35,
-          color = "black",
-          fill = "white"
+          # label.padding = unit(0.5, "lines"),
+          # label.size = 0.35,
+          # color = "black",
+          # fill = "white"
         ) +
         scale_x_date(date_breaks = '1 year',
                      date_labels = "%y",
@@ -1880,11 +1962,11 @@ server <- function(input, output, session) {
         )) +
         theme_minimal()
       
-      b_ <- ggplot_build(p)
-      b_lm_ns_ <- b_$data[[4]]
-      b_lm <- b_$data[[5]]
-      
-      df_store(b_lm_ns_)
+      # b_ <- ggplot_build(p)
+      # b_lm_ns_ <- b_$data[[4]]
+      # b_lm <- b_$data[[5]]
+      # 
+      # df_store(b_lm_ns_)
       
       # write.csv(b_lm_ns_, 'ggplot_obj1.csv')
       # write.csv(b_lm, 'ggplot_obj2.csv')
@@ -1895,10 +1977,10 @@ server <- function(input, output, session) {
     #   
       ggplotly(
         p
-      ) %>% style(hoverinfo = "text") %>% style(hoverinfo = "none", traces = c(1, 4,5)) %>% style(hovertemplate = "Estimate: %{y:.2f}", traces = c(4,5)) %>%
+      ) %>% style(hoverinfo = "text") %>% style(hoverinfo = "none", traces = c(1, 4, 5)) %>% style(hovertemplate = "Estimate: %{y:.2f}", traces = c(4,5)) %>%
         config(
           modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
-          displaylogo = FALSE  # This removes the Plotly logo, which is often desired
+          displaylogo = FALSE  # This removes the Plotly logo
         ) %>% layout(
           dragmode = FALSE
         )
@@ -2171,7 +2253,7 @@ server <- function(input, output, session) {
       output <- ""
       for (line in strsplit(tx_d %>% pull(content), "\n")[[1]]) {
         if (grepl(": ", line)) {
-          output <- paste(output, "<br>", "<h4> > </h4>", line, "<br>")
+          output <- paste(output, "<br>", "<span>  </span>", line, "<br>")
         } else {
           output <- paste(output, line)
         }
@@ -2305,13 +2387,13 @@ server <- function(input, output, session) {
     prompt <- list(list(
       role = "system",
       content = paste0(
-        "You are an expert financial analyst specializing in interpreting investor transcripts. Analyze the following excerpt from",
+        "You are an expert financial analyst specializing in interpreting investor transcripts and addressing the user's questions. Analyze the following excerpt from",
         stkPrfl() %>% pull(companyName),
         " Q",
         as.character(input$trnscrptQrtr),
         " ",
         as.character(input$trnscrptYr),
-        " earnings call transcript, focusing on key financial metrics, management's outlook, and any significant strategic changes. Provide a structured response with an executive summary, main points using bullet points and historical parallels. Consider current market conditions and the company's position in its industry when providing your analysis.",
+        " earnings call transcript, focusing on key financial metrics, management's outlook, and any significant strategic changes. Respond to the query by providing a structured response with an executive summary, main points using bullet points, justified by key figures, and historical parallels, if relevant. Consider current market conditions and the company's position in its industry when providing your analysis.",
         " Format response in HTML for R Shiny renderUI (for example, for bold, use a div with appropriate style parameter), don't reflect this fact in the response. Avoid wrapping in ``` quotes. End with a finished sentence. This is the transcript: ",
         # substr(
         trnscrpt_() %>% pull(content)
@@ -2346,3 +2428,8 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
+
+
+# profvis::profvis({
+  # runApp("C:/Users/alexa/Documents/Personal/R Scripts/fmpc-shiny-app/fmpc-app-web/")
+# })

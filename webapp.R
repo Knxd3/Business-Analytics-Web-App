@@ -6,16 +6,16 @@ library(kableExtra)
 library(ggplot2)
 library(plotly)
 library(fmpcloudr)
-library(openai)
+# library(openai)
 library(lubridate)
 library(Cairo)
 library(bslib)
-library(shinyauthr)
-library(RSQLite)
-library(sodium)
+# library(shinyauthr)
+# library(RSQLite)
+# library(sodium)
 library(thematic)
 # library(shinybrowser)
-library(shinyjs)
+# library(shinyjs)
 
 # load API keys
 fmpc_set_token(Sys.getenv("API_FMPC"))
@@ -124,10 +124,10 @@ ui <- fluidPage(
           style = "display: flex; justify-content: center; align-items: center; margin-top: 10px;",
           
           div(
-            style = "display: flex; align-items: center; width: 50%;",
+            style = "display: flex; align-items: center; width: 100%; max-width: 600px; margin: 0 auto;",
             
             div(
-              style = "flex-grow: 1; margin-right: 10px;",
+              style = "flex: 1; margin-right: 10px; min-width: 0;",
               selectizeInput(
                 inputId = "mstrSmbl",
                 label = NULL,
@@ -147,25 +147,27 @@ ui <- fluidPage(
               )
             ),
             
-            actionButton(
-              inputId = 'mstrSmblBtn',
-              label = NULL,
-              icon = icon("search"),
-              style = "
-            padding: 10px 20px;
-            margin-top: -10px;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s, box-shadow 0.3s;
-            height: 38px;
-            line-height: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          "
+            div(
+              style = "flex-shrink: 0; margin-top: -10px;",
+              actionButton(
+                inputId = 'mstrSmblBtn',
+                label = NULL,
+                icon = icon("search"),
+                style = "
+        padding: 10px 20px;
+        font-size: 16px;
+        font-weight: bold;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s, box-shadow 0.3s;
+        height: 38px;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      "
+              )
             )
           )
         )
@@ -789,7 +791,7 @@ tabPanel(
 #### shiny server ----
 server <- function(input, output, session) {
 
-  con <- dbConnect(RSQLite::SQLite(), "datadb.db")
+  con <- RSQLite::dbConnect(RSQLite::SQLite(), "datadb.db")
   
   i_mstrSmbl <- reactiveVal(NULL)
   
@@ -874,7 +876,7 @@ server <- function(input, output, session) {
   
   output$ecn <- renderPlotly({
     start <- Sys.time()
-    result <- dbGetQuery(con, "SELECT * FROM economic_indicators WHERE Indicator in ('totalVehicleSales',
+    result <- RSQLite::dbGetQuery(con, "SELECT * FROM economic_indicators WHERE Indicator in ('totalVehicleSales',
          'federalFunds',
          'inflation',
          '15YearFixedRateMortgageAverage',
@@ -1020,7 +1022,7 @@ server <- function(input, output, session) {
     
     start = Sys.time()
     
-    result <- dbGetQuery(con, "SELECT * FROM commodities") %>% mutate(date = ymd(date), date_added = ymd(date_added))
+    result <- RSQLite::dbGetQuery(con, "SELECT * FROM commodities") %>% mutate(date = ymd(date), date_added = ymd(date_added))
     last_run_date <- ymd(result %>% summarise(last_date_added = max(date_added)) %>% pull(last_date_added))
     
     mins_ <- result %>% group_by(CommodityName) %>% summarise(mn_ = min(close))
@@ -1113,11 +1115,10 @@ server <- function(input, output, session) {
   
   #### login ----
   
-  
-  conn <- dbConnect(RSQLite::SQLite(), dbname = "users.sqlite")
+  conn <- RSQLite::dbConnect(RSQLite::SQLite(), dbname = "users.sqlite")
   credentials <- shinyauthr::loginServer(
     id = "login",
-    data = dbGetQuery(conn, "SELECT * FROM users"),
+    data = RSQLite::dbGetQuery(conn, "SELECT * FROM users"),
     user_col = "email",
     pwd_col = "password",
     sodium_hashed = TRUE,
@@ -1161,7 +1162,7 @@ server <- function(input, output, session) {
     new_user <- input$new_user
     new_password <- input$new_password
     
-    existing_users <- dbGetQuery(conn, "SELECT email from users")
+    existing_users <- RSQLite::dbGetQuery(conn, "SELECT email from users")
     if (new_user %in% existing_users$email) {
       output$register_message <- renderText("Username already exists. Please choose another.")
     }
@@ -1248,7 +1249,7 @@ server <- function(input, output, session) {
     
     ## load data
     dt_0 <- fmpc_security_profile(input$mstrSmbl)
-    dt_1 <- fmpc_price_history(symbols = input$mstrSmbl, startDate = "1995-01-01", endDate = Sys.Date()) %>%
+    dt_1 <- fmpc_price_history(symbols = input$mstrSmbl, startDate = "2005-01-01", endDate = Sys.Date()) %>%
       select(symbol, date, close) %>% mutate(close = round(close , 2))
     dt_2 <- fmpc_financial_bs_is_cf(symbols = input$mstrSmbl, statement = 'income', quarterly = FALSE, limit = 25)
     dt_3 <- fmpc_financial_bs_is_cf(symbols = input$mstrSmbl, statement = 'balance', quarterly = FALSE, limit = 25)
@@ -1384,14 +1385,16 @@ server <- function(input, output, session) {
     
     
     stkMdlRctv <- reactive({
-      prc <- req(stkPrc()) %>%
+      prc_ <- isolate(stkPrc())
+      prc <- prc_ %>%
         filter(between(date, input$i_stkMdlSldr[1], input$i_stkMdlSldr[2])) %>%
         mutate(calendarYear = as.integer(substr(date, 1, 4))) %>%
         mutate(mn = min(close, na.rm = T),
                mx = max(close, na.rm = T),
                mn_x = min(date, na.rm = T))
       
-      fndmt <- req(stkFDta()) %>% select(symbol, calendarYear, fillingDate, !!(input$i_mdlMtrc)) %>% rename('profit' = !!(input$i_mdlMtrc))
+      fndmt_ <- isolate(stkFDta())
+      fndmt <- fndmt_ %>% select(symbol, calendarYear, fillingDate, !!(input$i_mdlMtrc)) %>% rename('profit' = !!(input$i_mdlMtrc))
       
       # write.csv(prc, 'prc_test2.csv')
       # write.csv(fndmt, 'fndm2.csv')
@@ -1672,35 +1675,43 @@ server <- function(input, output, session) {
     #### fundamentals chart ----
     
     output$stkFndmt <- renderPlotly({
-      ggplotly(
-        req(stkFdmntlsLng()) %>%
-          filter(
-            between(calendarYear, input$fndmtlsSldr[1], input$fndmtlsSldr[2])
-          ) %>%
-          filter(Legend %in% input$fndmtlsMtrics) %>%
-          ggplot() +
-          geom_line(aes(
-            x = fillingDate, y = Value, col = Legend
-          ), linewidth = 1) +
-          geom_point(
-            aes(x = fillingDate, y = Value, col = Legend),
-            size = 1,
-            show.legend = FALSE
-          ) +
-          scale_y_continuous(
-            n.breaks = 10,
-            trans = ifelse(input$fndmtlsLg, 'log', 'identity'),
-            labels = scales::label_number(scale_cut = scales::cut_short_scale())
-          ) +
-          labs(x = '', y = '', title = 'Fundamentals Chart') +
-          theme_minimal()
-      ) %>% layout(legend = list(orientation = 'h')) %>% 
+      d_ <- isolate(stkFdmntlsLng())
+      p <- d_ %>%
+        filter(
+          between(calendarYear, input$fndmtlsSldr[1], input$fndmtlsSldr[2])
+        ) %>%
+        filter(Legend %in% input$fndmtlsMtrics) %>%
+        ggplot() +
+        geom_line(aes(
+          x = fillingDate, y = Value, col = Legend
+        ), linewidth = 1) +
+        geom_point(
+          aes(x = fillingDate, y = Value, col = Legend, 
+              text = paste(Legend, ": ",scales::comma(round(Value/1e6, 2)), "M")),
+          size = 1,
+          show.legend = FALSE
+        ) +
+        scale_x_date(date_breaks = "2 years", 
+                     date_labels = "%y") +
+        scale_y_continuous(
+          n.breaks = 10,
+          trans = ifelse(input$fndmtlsLg, 'log', 'identity'),
+          labels = scales::label_number(scale_cut = scales::cut_short_scale())
+        ) +
+        labs(x = '', y = '', title = 'Fundamentals Chart') +
+        theme_minimal()
+      
+      ggplotly(p, tooltip = "text") %>% 
+        layout(legend = list(orientation = 'h')) %>% 
         config(
           modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
-          displaylogo = FALSE  # This removes the Plotly logo, which is often desired
-        ) %>% layout(
+          displaylogo = FALSE
+        ) %>% 
+        layout(
           dragmode = FALSE
-        )
+        ) %>% 
+        style(hoverinfo = "text", traces = 2) %>% 
+        style(hoverinfo = "none", traces = 1)
       
     })
     
@@ -2185,7 +2196,11 @@ server <- function(input, output, session) {
               x = fillingDate,
               y = Value,
               fill = Legend,
-              text = paste("calendarYear:", as.character(calendarYear))
+              text = paste(
+                "Legend:", Legend,
+                "<br>Value:", scales::comma(round(Value/1e6, 2)), "M",
+                "<br>Calendar Year:", as.character(calendarYear)
+              )
             ),
             stat = 'identity',
             position = 'stack',
@@ -2202,12 +2217,16 @@ server <- function(input, output, session) {
             labels = scales::label_number(scale_cut = scales::cut_short_scale())
           ) +
           labs(title = "Capital Allocation Chart") +
-          theme_minimal()
-      ) %>% layout(legend = list(orientation = 'h')) %>% style(hoverinfo = "text") %>% 
+          theme_minimal(),
+        tooltip = "text"
+      ) %>% 
+        layout(legend = list(orientation = 'h')) %>% 
+        style(hoverinfo = "text") %>% 
         config(
           modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
-          displaylogo = FALSE  # This removes the Plotly logo, which is often desired
-        ) %>% layout(
+          displaylogo = FALSE
+        ) %>% 
+        layout(
           dragmode = FALSE
         )
       
@@ -2403,11 +2422,34 @@ server <- function(input, output, session) {
     
     msgs <- c(prompt, q_)
     
-    completion <- create_chat_completion(
-      model = "gpt-4o-mini",
-      messages = msgs,
-      max_tokens = 700,
-      temperature = 0.3
+    # completion <- openai::create_chat_completion(
+    #   
+    #   model = "gpt-4o-mini",
+    #   messages = msgs,
+    #   max_tokens = 700,
+    #   temperature = 0.3
+    # )
+    
+    
+    tryCatch(
+      {
+        completion <- openai::create_chat_completion(
+          
+          model = "gpt-4o-mini",
+          messages = msgs,
+          max_tokens = 700,
+          temperature = 0.3
+        )
+      },
+      error = function(e) {
+        completion <- openai::create_chat_completion(
+          
+          model = "gpt-4o-mini",
+          messages = msgs,
+          max_tokens = 700,
+          temperature = 0.3
+        )
+      }
     )
     
     resp_ <- list(list(role = "assistant", content = completion$choices$message.content)) 

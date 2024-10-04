@@ -4,7 +4,8 @@ Quantitative tools for the value investor
 ## Access
 https://webpublish.shinyapps.io/value-quant-investment/
 ## Preview
-![image](https://github.com/user-attachments/assets/c302d319-d047-4d36-9736-3c7e21e5fc4d)
+![image](https://github.com/user-attachments/assets/c5f2c438-c6b3-422d-ae0c-d269dc37c820)
+
 
 
 

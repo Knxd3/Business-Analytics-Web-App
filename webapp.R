@@ -2,7 +2,7 @@ library(shiny)
 library(dplyr)
 library(tidyr)
 library(DT)
-library(kableExtra)
+# library(kableExtra)
 library(ggplot2)
 library(plotly)
 library(fmpcloudr)
@@ -54,6 +54,11 @@ ui <- fluidPage(
   tags$head(tags$style(
     HTML(
       "
+      @media (max-width: 1339px) {
+      .navbar-nav {
+      margin-left: 10px;
+      }
+      }
       @media (min-width: 1340px) {
         .navbar-nav {
           width: 100%;
@@ -530,7 +535,7 @@ tabPanel(
           div(
             class = "card-body",
             h5(class = "card-title", "Model Data"),
-            tableOutput('stkMdlTbl')
+            DTOutput('stkMdlTbl')
           )
         )
       )
@@ -1481,24 +1486,49 @@ server <- function(input, output, session) {
           `P-Book` = marketCap / bookValue,
           EV = marketCap + totalDebt,
           `EV-FCF` = EV / freeCashFlow
-        ) %>% mutate(across(
-          where(is.numeric),
-          ~ scales::label_number(
-            scale_cut = scales::cut_short_scale(),
-            accuracy = 0.01
-          )(.x)
-        ))
+        ) %>% rename(
+          "Free Cash Flow" = freeCashFlow,
+          "Operating Income" = operatingIncome,
+          "Net Income" = netIncome,
+          "Book Value" = bookValue,
+          "EPS (Diluted)" = epsdiluted,
+          "R&D Expenses" = researchAndDevelopmentExpenses,
+          "Total Debt" = totalDebt
+        )  %>% select(-symbol, -date) %>%
+        mutate(across(
+          where(is.numeric) & !contains('CalendarYear'), ~custom_number_format(.x, decimals = 2)
+        )) #%>% mutate(across(
+        #   where(is.numeric),
+        #   ~ scales::label_number(
+        #     scale_cut = scales::cut_short_scale(),
+        #     accuracy = 0.01
+        #   )(.x)
+        # ))
+      # print(dt)
       
-      
-      t <- dt %>% select(-symbol, -date) %>% t(.) %>% kable() %>%
-        kable_styling(
+      t <- dt  %>% t(.) %>% kableExtra::kable() %>%
+        kableExtra::kable_styling(
           bootstrap_options = c("striped", "hover", "condensed", "responsive"),
           full_width = TRUE,
           position = "center"
         ) %>%
-        column_spec(1, bold = TRUE) %>%
-        row_spec(0, bold = TRUE, color = "white") %>%
-        add_header_above(c("Financials" = 1, "3y Avg." = 1))
+        kableExtra::column_spec(1, bold = TRUE) %>%
+        kableExtra::row_spec(0, bold = TRUE, color = "white") %>%
+        kableExtra::add_header_above(c("Financials" = 1, "3y Avg." = 1))
+   
+      # t <- datatable(
+      #   dt %>% select(-symbol, -date) %>% t(.),
+      #   filter = "top",
+      #   options = list(
+      #     pageLength = 10,
+      #     autoWidth = TRUE,
+      #     scrollX = TRUE,
+      #     dom = 'Bfrtip'
+      #     #buttons = c('copy', 'csv', 'excel')
+      #   ),
+      #   extensions = 'Buttons',
+      #   class = 'cell-border stripe hover'
+      # )
       
       # print(paste("General - table: ", as.character(Sys.time() - start)))
     
@@ -1519,15 +1549,15 @@ server <- function(input, output, session) {
                                 -dcfDiff,
                                 -zip,
       ) %>%
-        t(.) %>% kable() %>%
-        kable_styling(
+        t(.) %>% kableExtra::kable() %>%
+        kableExtra::kable_styling(
           bootstrap_options = c("striped", "hover", "condensed", "responsive"),
           full_width = TRUE,
           position = "center"
         ) %>%
-        column_spec(1, bold = TRUE) %>%
-        row_spec(0, bold = TRUE, color = "white") %>% # background = "#4E79A7") %>%
-        add_header_above(c("General" = 1, " " = 1))
+        kableExtra::column_spec(1, bold = TRUE) %>%
+        kableExtra::row_spec(0, bold = TRUE, color = "white") %>% # background = "#4E79A7") %>%
+        kableExtra::add_header_above(c("General" = 1, " " = 1))
     })
     
     #### stock description ----
@@ -1539,6 +1569,8 @@ server <- function(input, output, session) {
     
     
     #### stock price ----
+    
+    start <- Sys.time()
     
     output$stkP <- renderPlotly({
       updatemenus <- list(
@@ -1574,6 +1606,7 @@ server <- function(input, output, session) {
           ), direction = "right", pad = list(r = 10, t = 10), showactive = TRUE, x = 0.01, xanchor = "left", y = -0.05, yanchor = "top", type = "buttons", font = list(size = 10), buttonwidth = 80
         )
       )
+      # print(paste("menus: ", as.character(Sys.time() - start)))
       
       # prm_user <- credentials()$info$premium
       # print(prm_user)
@@ -1613,14 +1646,19 @@ server <- function(input, output, session) {
       
       
       d_ <- d_ %>% left_join(i_tr, by = "calendarYear") %>% group_by(calendarYear) %>% mutate(y_ = last(close)) %>% ungroup()
-
-      ggplotly(
+      
+      # print(paste("Insider: ", as.character(Sys.time() - start)))
+      
+      p <- ggplotly(
         d_ %>% ggplot() +
-          geom_area(
-            aes(x = date, y = close),
-            fill = '#56CC9D',
-            alpha = 0.05
-          ) +
+          # geom_area(
+          #   aes(x = date, y = close),
+          #   fill = '#56CC9D',
+          #   alpha = 0.05
+          # ) +
+          geom_ribbon(aes(
+            x = date, ymin = min(d_$close) * .95, ymax = close
+          ), alpha = 0.05, fill = '#56CC9D') +
           geom_line(aes(x = date, y = close), colour = '#56CC9D') +
           geom_point(
             aes(
@@ -1667,8 +1705,10 @@ server <- function(input, output, session) {
         modeBarButtonsToRemove = c('zoom', 'select')) %>% layout(
           dragmode = FALSE
         )
+      
+      # print(paste("Plot: ", as.character(Sys.time() - start)))
 
-
+    return(p)
     })
     
 
@@ -1834,7 +1874,7 @@ server <- function(input, output, session) {
     #   )
     # })
     
-    #### fundamentals tbl tabsetPanel ----
+    #### fundamentals tbl -----
     
     output$stkInc_ <- renderDT({
       datatable(
@@ -1908,7 +1948,8 @@ server <- function(input, output, session) {
       
       p <- d_e %>%
         ggplot() +
-        geom_area(aes(x = date, y = close), alpha = 0.15) +
+        geom_ribbon(aes(x = date, ymin = min(d_e$close) * .95, ymax = close), alpha = 0.15) +
+        # geom_area(aes(x = date, y = close), alpha = 0.15) +
         geom_line(aes(x = date, y = close)) +
         geom_point(aes(x = fillingDate, y = Estimate),
                    colour = '#FF7851',
@@ -2000,24 +2041,41 @@ server <- function(input, output, session) {
     
     #### model table ----
     
-    output$stkMdlTbl <- renderText({
+    output$stkMdlTbl <- renderDT({
       
       tbl <- stkMdlRctv() %>%
         dplyr::distinct(calendarYear, fillingDate, profit, multiple, Estimate) %>%
         arrange(desc(calendarYear)) %>% na.omit(.)
+      
+      datatable(
+        tbl %>%
+          mutate(across(
+            where(is.numeric) & !contains('CalendarYear'), ~ custom_number_format(.x, decimals = 2)
+          )),
+        filter = "top",
+        options = list(
+          pageLength = 10,
+          autoWidth = TRUE,
+          scrollX = TRUE,
+          dom = 'frtip',
+          searching = FALSE
+        ),
+        class = 'cell-border stripe',
+        selection = 'none'
+      )
 
       # write.csv(stkMdlRctv(), 'test.csv')
 
-      tbl %>%
-        kable() %>%
-        kable_styling(
-          bootstrap_options = c("striped", "hover", "condensed", "responsive"),
-          full_width = TRUE
-        ) %>%
-        column_spec(1, bold = TRUE) %>%
-        row_spec(0, bold = TRUE, color = "white") %>%
-        row_spec(0:nrow(tbl), align = "c") %>%
-        add_header_above(c("calendarYear" = 1, "fillingDate" = 1, "profit" = 1, "multiple" = 1, "estimate" = 1))
+      # tbl %>%
+      #   kable() %>%
+      #   kable_styling(
+      #     bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+      #     full_width = TRUE
+      #   ) %>%
+      #   column_spec(1, bold = TRUE) %>%
+      #   row_spec(0, bold = TRUE, color = "white") %>%
+      #   row_spec(0:nrow(tbl), align = "c") %>%
+      #   add_header_above(c("calendarYear" = 1, "fillingDate" = 1, "profit" = 1, "multiple" = 1, "estimate" = 1))
 
       # x <- read.csv('ggplot_obj1.csv')
       

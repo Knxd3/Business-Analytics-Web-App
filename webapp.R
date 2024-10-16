@@ -7,7 +7,7 @@ library(ggplot2)
 library(plotly)
 library(fmpcloudr)
 # library(openai)
-library(lubridate)
+# library(lubridate)
 library(Cairo)
 library(bslib)
 # library(shinyauthr)
@@ -34,8 +34,8 @@ thematic_shiny(font = "auto")
 # load functions
 source('webfunctions.R')
 
-# autosuggest_ <- fmpc_symbols_available() %>% filter(type == "stock" ) %>% filter(exchangeShortName %in% c("NYSE", "NASDAQ", "JPX", "LSE", "HKSE", "ASX", "SHH", "SHZ", "XETRA")) %>% select(symbol, name)
-# # 
+# autosuggest_ <- fmpc_symbols_available() %>% filter(type == "stock" ) %>% filter(exchangeShortName %in% c("NYSE", "NASDAQ", "JPX", "LSE", "HKSE", "ASX", "SHH", "SHZ", "XETRA", "EURONEXT", "PNK", "OTC", "BSE")) %>% select(symbol, name)
+# #
 # # autosuggest_ <- autosuggest_ %>% group_by(exchangeShortName, exchange) %>% summarise(n = n())
 # 
 # autosuggest_['name'][is.na(autosuggest_['name'])] <- ""
@@ -43,8 +43,6 @@ source('webfunctions.R')
 # write.csv(autosuggest_ %>% mutate(name_f = paste0(name, " (", symbol, ")")), 'availab_symbols.csv', row.names = F)
 # 
 
-autosuggest_ <- read.csv('www/availab_symbols.csv') #%>% filter(symbol %in% c('AAPL', 'META'))
-autosuggest_ <- setNames(as.list(autosuggest_$symbol), autosuggest_$name_f)
 
 body_width <- 8
 
@@ -54,7 +52,7 @@ ui <- fluidPage(
   tags$head(tags$style(
     HTML(
       "
-      @media (max-width: 1339px) {
+      @media (max-width: 1340px) {
       .navbar-nav {
       margin-left: 10px;
       }
@@ -236,7 +234,7 @@ ui <- fluidPage(
                    'Commodities',
                    # actionButton("info_cmmdts", "ℹ️", class = "btn btn-sm btn-outline-secondary")
                 ),
-                plotlyOutput('cmdts', height = '600px')
+                plotlyOutput('cmdts', height = '700px')
               )
             )
           ),
@@ -252,7 +250,7 @@ ui <- fluidPage(
                    'Global Market Index',
                    # actionButton("info_mrkts", "ℹ️", class = "btn btn-sm btn-outline-secondary")
                 ),
-                plotlyOutput('mrkts', height = '600px')
+                plotlyOutput('mrkts', height = '700px')
               )
             )
           )
@@ -504,7 +502,7 @@ tabPanel(
               'i_trgtFrct',
               'Set Forecast End:',
               min = as.Date(Sys.Date() + 180),
-              max = as.Date(Sys.Date() + 3600),
+              max = as.Date(Sys.Date() + 7200),
               value = as.Date(Sys.Date() + 360 * 3),
               format = "yyyy-mm",
               weekstart = 1,
@@ -527,7 +525,7 @@ tabPanel(
           div(
             class = "card-body",
             h5(class = "card-title", "Stock Model"),
-            plotlyOutput('stkMdl')
+            plotlyOutput('stkMdl', height = "650px")
           )
         ),
         div(
@@ -540,7 +538,7 @@ tabPanel(
         )
       )
     )
-  )
+)
 ),
 
 #### tab valuation----
@@ -614,6 +612,89 @@ tabPanel(
             class = "card-body",
             h5(class = "card-title", "Valuation Chart"),
             plotlyOutput('vltn', height = "1500px")
+          )
+        )
+      )
+    ),
+    
+    #### dcf gauge ----
+    
+    div(
+      class = "row",
+      
+      # Second Sidebar
+      div(
+        class = "col-md-3",
+        div(
+          class = "card shadow-sm mb-4",
+          div(
+            class = "card-body",
+            h5(class = "card-title", "Fair Value Controls"),
+            numericInput(
+              inputId = "i_fvHrzn",
+              label = "Projection Period (years):",
+              value = 5,
+              min = 1,
+              max = 20,
+              step = 1
+            ),
+            numericInput(
+              inputId = "i_grwthRt",
+              label = "Growth Rate (%):",
+              value = 5,
+              min = -10.0,
+              max = 50.0,
+              step = 0.1
+            ),
+            numericInput(
+              inputId = "i_dscntRt",
+              label = "Discount Rate (%)",
+              value = 5,
+              min = 0.0,
+              max = 20.0,
+              step = 0.1
+            ),
+            numericInput(
+              inputId = "i_extMltpl",
+              label = "Exit Multiple",
+              value = 10,
+              min = 1,
+              max = 50,
+              step = 1
+            ),
+            numericInput(
+              inputId = "i_strtFv",
+              label = "Start Value (M)",
+              value = 1,
+              min = 0.0,
+              max = 10^9,
+              step = 0.1
+            )
+          )
+        )
+      ),
+      
+      # Second Main Content
+      div(
+        class = "col-md-9",
+        div(
+          class = "card shadow-sm mb-4",
+          div(
+            class = "card-body",
+            h5(class = "card-title", "Discounted Fair Value"),
+            plotlyOutput('mdlGauge'),
+            wellPanel(
+              h5('Control Helpers:'),
+              textOutput(outputId = "dcf_controls1"), # smooth model end value implied/ linear model implied rate / 
+              textOutput(outputId = 'dcf_controls2')#latest stock price
+            ),
+            wellPanel(
+              h5('DCF Results:'),
+              textOutput(outputId = "dcf_results1"),
+              textOutput(outputId = "dcf_results2"),
+              textOutput(outputId = "dcf_results3"),
+              textOutput(outputId = "dcf_results4")
+            )
           )
         )
       )
@@ -751,6 +832,75 @@ tabPanel(
     )
   )
 ),
+
+# #### tab screener -----
+# tabPanel(
+#   title = 'Screener',
+#   id = 'screener',
+#   div(
+#     class = "container-fluid",
+#     style = "max-width: 1400px; margin: auto;",
+#     div(
+#       class = "row",
+#       
+#       # Sidebar
+#       div(
+#         class = "col-md-3",
+#         div(
+#           class = "card-body",
+#           h5(class = "card-title", "Screener Controls"),
+#           dateInput(
+#             'i_startScreener',
+#             'Set End of Screener Window:',
+#             min = as.Date("2007-01-01"),
+#             max = as.Date("2024-08-01"),
+#             value = as.Date("2008-08-01"),
+#             format = "yyyy-mm",
+#             weekstart = 1,
+#             startview = "year"
+#           ),
+#           dateInput(
+#             'i_endScreener',
+#             'Set End of Screener Window:',
+#             min = as.Date("2007-01-01"),
+#             max = as.Date("2024-08-01"),
+#             value = as.Date("2024-08-01"),
+#             format = "yyyy-mm",
+#             weekstart = 1,
+#             startview = "year"
+#           ),
+#           numericInput(
+#             'i_screenerToPlot',
+#             'Companies to plot:',
+#             value = 5,
+#             min = 1,
+#             max = 15,
+#             step = 1
+#           )
+#         )
+#       ),
+#       
+#       
+#       # Main Panel
+#       
+#       div(
+#         class = "col-md-9",
+#         div(
+#           class = "card shadow-sm",
+#           div(
+#             class = "card-body",
+#             h5(class = "card-title", "Performance vs. SP500"),
+#             plotlyOutput('screenerPlot')
+#           )
+#         )
+#       )
+#       
+#       
+#     )
+#   )
+# ),
+
+
   #### tab other ----
   tabPanel(title = "Other", 
            id = "Other",
@@ -797,6 +947,28 @@ tabPanel(
 server <- function(input, output, session) {
 
   con <- RSQLite::dbConnect(RSQLite::SQLite(), "datadb.db")
+  
+  # Replace w db store & load in server for faster UI render
+  
+  # autosuggest_ <- read.csv('www/availab_symbols.csv') #%>% filter(symbol %in% c('AAPL', 'META'))
+  
+  # con <- RSQLite::dbConnect(RSQLite::SQLite(), "datadb.db")
+  # RSQLite::dbExecute(con, "
+  #     CREATE TABLE IF NOT EXISTS availab_symbols (
+  #         symbol	VARCHAR(10),
+  #         name VARCHAR(100),
+  #         name_f VARCHAR(500) 
+  #                    )")
+  # 
+  # RSQLite::dbWriteTable(con,
+  #              "availab_symbols",
+  #              autosuggest_,
+  #              overwrite = TRUE)
+  
+  
+  
+  autosuggest_ <- RSQLite::dbGetQuery(con, "SELECT * FROM availab_symbols")
+  autosuggest_ <- setNames(autosuggest_$symbol, autosuggest_$name_f)
   
   i_mstrSmbl <- reactiveVal(NULL)
   
@@ -892,27 +1064,35 @@ server <- function(input, output, session) {
          '30YearFixedRateMortgageAverage') " # AND date > '1995-01-01' ,
                          ) %>% mutate(date = lubridate::ymd(date), date_added = lubridate::ymd(date_added))
     
-    # result <- dbGetQuery(con, "SELECT * FROM economic_indicators") %>% group_by(Indicator) %>% arrange(date) %>% mutate(value = value - dplyr::lag(value, 1)) %>% drop_na(.)
-    # 
-    # result <- result %>% group_by(Indicator) %>% summarise(s_ = stats::sd(value))
-    # 
+    # # not fast Time difference of 0.006968975 secs
+    # start <- Sys.time()
+    # mins_ <- result %>% group_by(IndicatorName) %>% summarise(mn_ = min(value))
+    # result <- result %>% left_join(mins_, by = "IndicatorName")
+    # print(Sys.time() - start)
     
-    mins_ <- result %>% group_by(IndicatorName) %>% summarise(mn_ = min(value))
-    result <- result %>% left_join(mins_, by = "IndicatorName")
     
-    last_run_date <- ymd(result %>% summarise(last_date_added = max(date_added)) %>% pull(last_date_added))
+    # # faster Time difference of 0.002198935 secs
+    # start <- Sys.time()
+    result <- result %>%
+      group_by(IndicatorName) %>%
+      mutate(mn_ = min(value) * .95) %>%
+      ungroup()
+    # print(Sys.time() - start)
     
-    if (Sys.Date() - ymd(last_run_date) > 30){
-      source(createdb.R)
+    
+    last_run_date <- lubridate::ymd(max(result$date_added))
+    
+    if (Sys.Date() - lubridate::ymd(last_run_date) > 30){
+      source("createdb.R")
     }
 
     p <- result %>% ggplot() +
       # geom_area(aes(x = date, y = value), alpha = 0.05, fill = '#56CC9D') +
       geom_ribbon(aes(
-        x = date, ymin = mn_ * .95, ymax = value
+        x = date, ymin = mn_, ymax = value
       ), alpha = 0.05, fill = '#56CC9D') +
       geom_line(aes(x = date, y = value), colour = '#56CC9D') + #, colour = '#FF7851'
-      scale_x_date(date_labels = "%Y") +
+      scale_x_date(date_breaks = "10 years", date_labels = "%Y") +
       facet_wrap(vars(IndicatorName), ncol = 1, scales = 'free') +
       scale_y_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale())) + #scales::label_number(scale = 1e-3)) +
       labs(x = '', y = '') +
@@ -958,6 +1138,10 @@ server <- function(input, output, session) {
     ) %>% select(symbol, date, close)
   })
 
+  
+  
+  
+  
   #### markets ----
 
   output$mrkts <- renderPlotly({
@@ -965,8 +1149,12 @@ server <- function(input, output, session) {
     start <- Sys.time()
 
     d_ <- req(indxs())
-    mins_ <- d_ %>% group_by(symbol) %>% summarise(mn_ = min(close))
-    d_ <- d_ %>% left_join(mins_, by = "symbol")
+    d_ <- d_ %>%
+      group_by(symbol) %>%
+      mutate(mn_ = min(close) * .95) %>%
+      ungroup()
+    
+    
 
     d_ <- d_ %>%
       mutate(
@@ -986,10 +1174,10 @@ server <- function(input, output, session) {
       d_ %>% ggplot() +
         # geom_area(aes(x = date, y = close, ymin = 10000), alpha = 0.15) +
         geom_ribbon(aes(
-          x = date, ymin = mn_ * .95, ymax = close
+          x = date, ymin = mn_, ymax = close
         ), alpha = 0.05, fill = '#56CC9D') + #, fill = '#56CC9D'
         geom_line(aes(x = date, y = close), colour = '#56CC9D') + #, colour = '#FF7851'
-        scale_x_date(date_labels = "%b-%d") +
+        scale_x_date(date_breaks = "10 days", date_labels = "%b-%d") +
         facet_wrap(vars(Index), ncol = 1, scales = 'free') +
         scale_y_continuous(labels = scales::label_number(scale = 1e-3, suffix = "K")) +
         labs(x = '', y = '') +
@@ -1027,20 +1215,20 @@ server <- function(input, output, session) {
     
     start = Sys.time()
     
-    result <- RSQLite::dbGetQuery(con, "SELECT * FROM commodities") %>% mutate(date = ymd(date), date_added = ymd(date_added))
-    last_run_date <- ymd(result %>% summarise(last_date_added = max(date_added)) %>% pull(last_date_added))
+    result <- RSQLite::dbGetQuery(con, "SELECT * FROM commodities") %>% mutate(date = lubridate::ymd(date), date_added = lubridate::ymd(date_added))
+    last_run_date <- lubridate::ymd(max(result$date_added))
     
-    mins_ <- result %>% group_by(CommodityName) %>% summarise(mn_ = min(close))
-    result <- result %>% left_join(mins_, by = "CommodityName")
+    result <- result %>%
+      group_by(CommodityName) %>%
+      mutate(mn_ = min(close) * .95) %>%
+      ungroup()
     
-    if (Sys.Date() - ymd(last_run_date) > 30){
+    if (Sys.Date() - lubridate::ymd(last_run_date) > 30){
       source(createdb.R)
     }
     
     
     # print(paste("Commodities: ", as.character(Sys.time() - start)))
-    
-    
     ggplotly(
       result %>% ggplot() +
         # geom_area(aes(x = date, y = close), alpha = 0.05, fill = '#56CC9D') +
@@ -1048,7 +1236,7 @@ server <- function(input, output, session) {
           x = date, ymin = mn_ * .95, ymax = close
         ), alpha = 0.05, fill = '#56CC9D') +
         geom_line(aes(x = date, y = close), colour = '#56CC9D') + #, colour = '#FF7851'
-        scale_x_date(date_labels = "%Y") +
+        scale_x_date(date_breaks = "5 years", date_labels = "%Y") +
         facet_wrap(vars(CommodityName), ncol = 1, scales = 'free') +
         scale_y_continuous(labels = scales::label_number()) +
         labs(x = '', y = '') +
@@ -1088,33 +1276,84 @@ server <- function(input, output, session) {
   output$prssRls <- renderUI({
     d_ <- general.APIcall(endpoint = "Press-Release")
     
-    lapply(1:(min(30, nrow(d_))), function(i) {
+    # not fast
+    # start = Sys.time()
+    # lapply(1:(min(30, nrow(d_))), function(i) {
+    #   create_news_container(
+    #     type = "Press-Release",
+    #     symbol = d_$symbol[i],
+    #     date = d_$date[i],
+    #     title = d_$title[i],
+    #     text = d_$text[i]
+    #   )
+    # })
+    # print(Sys.time() - start)
+    
+    
+    
+    # faster
+    # start = Sys.time()
+    n <- min(20, nrow(d_))
+    d_subset <- d_[1:n, ]
+
+
+    result <- vector("list", n)
+    result <- Map(function(symbol, date, title, text) {
       create_news_container(
         type = "Press-Release",
-        symbol = d_$symbol[i],
-        date = d_$date[i],
-        title = d_$title[i],
-        text = d_$text[i]
+        symbol = symbol,
+        date = date,
+        title = title,
+        text = text
       )
-    })
+    }, d_subset$symbol, d_subset$date, d_subset$title, d_subset$text)
+    # print(Sys.time() - start)
+
+    return(result)
   })
 
   #### news ----
   output$nws <- renderUI({
     d_ <- general.APIcall(endpoint = "News") %>% filter(site != "ndtv.com")
-    k <- req(indxs())
+
+    # not fast    
+    # lapply(1:(min(30, nrow(d_))), function(i) {
+    #   create_news_container(
+    #     type = "News",
+    #     publishedDate = d_$publishedDate[i],
+    #     title = d_$title[i],
+    #     image = d_$image[i],
+    #     site = d_$site[i],
+    #     text = d_$text[i],
+    #     url = d_$url[i]
+    #   )
+    # })
     
-    lapply(1:(min(30, nrow(d_))), function(i) {
+  
+    # start = Sys.time()
+    
+    n <- min(20, nrow(d_))
+    d_subset <- d_[1:n, ]
+    
+    
+    result <- vector("list", n)
+    result <- Map(function(publishedDate, title, image, site, text, url) {
       create_news_container(
-        type = "News",
-        publishedDate = d_$publishedDate[i],
-        title = d_$title[i],
-        image = d_$image[i],
-        site = d_$site[i],
-        text = d_$text[i],
-        url = d_$url[i]
-      )
-    })
+            type = "News",
+            publishedDate = publishedDate,
+            title = title,
+            image = image,
+            site = site,
+            text = text,
+            url = url
+          )
+    }, d_subset$publishedDate, d_subset$title, d_subset$image, d_subset$site, d_subset$text, d_subset$url)
+    
+    # print(Sys.time() - start)
+    
+    return(result)
+    
+    
   })
   
   
@@ -1209,6 +1448,11 @@ server <- function(input, output, session) {
   })
   
   
+  
+  
+  
+  
+  
   observeEvent(input$mstrSmblBtn, {
     
     
@@ -1217,77 +1461,141 @@ server <- function(input, output, session) {
     }
     
     updateActionButton(session, 'oaiBtn', disabled = FALSE)
+    
     output$chtHst <- renderUI({
         return(HTML("<p></p>"))
         })
     
     #### data ----
-    
+    # the queried symbol
     i_mstrSmbl(input$mstrSmbl)
-    # 
-    # # currencies
-    # fxs <- lapply(paste(
-    #   c(
-    #     "BRL",
-    #     "CAD",
-    #     "CNY",
-    #     "EUR",
-    #     "HKD",
-    #   #  "INR",
-    #     "JPY",
-    #   #  "KRW",
-    #   #  "MXN",
-    #   #  "MYR",
-    #   #  "NOK",
-    #   #  "SEK",
-    #     "SGD",
-    #   #  "TRY",
-    #     "TWD",
-    #    # "ZAR"
-    #   ),
-    #   'USD',
-    #   sep = ''
-    # ), fx.APIcall)
-    # pair <- unname(unlist(lapply(fxs, '[', 'symbol')))
-    # rate <- unname(unlist(lapply(fxs, '[', 'price')))
-    # fxs <- data.frame(symbol = pair, price = rate)
     
     ## load data
     dt_0 <- fmpc_security_profile(input$mstrSmbl)
-    dt_1 <- fmpc_price_history(symbols = input$mstrSmbl, startDate = "2005-01-01", endDate = Sys.Date()) %>%
-      select(symbol, date, close) %>% mutate(close = round(close , 2))
+
+    # # not fast Time difference of 1.418141 secs
+    # start <- Sys.time()
+    # dt_1 <- fmpc_price_history(symbols = input$mstrSmbl, startDate = "2005-01-01", endDate = Sys.Date()) %>%
+    #   select(symbol, date, close) %>% mutate(close = round(close , 2))
+    # print(Sys.time() - start)
+
+    
+    
+    
+    # # faster Time difference of 0.3938439 secs
+    # start <- Sys.time()
+    # dt_1 <- data.table::as.data.table(general.APIcall(endpoint = "Price", symbol = input$mstrSmbl, start="2005-01-01"))
+    # data.table::setnames(dt_1, c('symbol', 'date', 'close'))
+    # dt_1[, `:=`(
+    #   close = round(as.numeric(close), 2),
+    #   date = lubridate::ymd(date)
+    # )]
+    # dt_1 <- as.data.frame(dt_1)
+    
+    
+    
+  
+    # faster Time difference of 0.365654 secs
+    # a large data set, enforce parsimony from endpoint directly
+    # start <- Sys.time()
+    dt_1 <- as.data.frame(general.APIcall(endpoint = "Price", symbol = input$mstrSmbl, start="2005-01-01"))
+    names(dt_1) <- c('symbol', 'date', 'close')
+    dt_1 <- dt_1 %>% mutate(close = as.numeric(close), date = lubridate::ymd(date)) %>% arrange(date)
+    # print(Sys.time() - start)
+    
+    # print(dt_1)
+    
     dt_2 <- fmpc_financial_bs_is_cf(symbols = input$mstrSmbl, statement = 'income', quarterly = FALSE, limit = 25)
     dt_3 <- fmpc_financial_bs_is_cf(symbols = input$mstrSmbl, statement = 'balance', quarterly = FALSE, limit = 25)
     dt_4 <- fmpc_financial_bs_is_cf(symbols = input$mstrSmbl, statement = 'cashflow', quarterly = FALSE, limit = 25)
-    f_dt <- dt_2 %>% inner_join(dt_3, by = c('symbol', 'calendarYear')) %>% inner_join(
-      dt_4 %>% select(-netIncome, -inventory, -depreciationAndAmortization),
-      by = c('symbol', 'calendarYear')
-    ) %>% select(!contains(c('.x', '.y', 'cik', 'link', 'dDate'))) %>%
+    
+    
+    # handle conversion for foreign stocks
+    if (1) {
+      # 
+      # # not fast Time difference of 1.75295 secs
+      # start <- Sys.time()
+      # # currencies
+      # fxs <- lapply(paste(
+      #   c(
+      #     "BRL",
+      #     "CAD",
+      #     "CNY",
+      #     "EUR",
+      #     "HKD",
+      #     "AUD",
+      #     #  "INR",
+      #     "JPY",
+      #     #  "KRW",
+      #     #  "MXN",
+      #     #  "MYR",
+      #     #  "NOK",
+      #     #  "SEK",
+      #     "SGD",
+      #     #  "TRY",
+      #     "TWD"
+      #     # "ZAR"
+      #   ),
+      #   'USD',
+      #   sep = ''
+      # ), fx.APIcall)
+      # pair <- unname(unlist(lapply(fxs, '[', 'symbol')))
+      # rate <- unname(unlist(lapply(fxs, '[', 'price')))
+      # fxs <- data.frame(symbol = pair, price = rate)
+      # 
+      # dt_2 <- convert.c(dt_2, fxs)
+      # dt_3 <- convert.c(dt_3, fxs)
+      # dt_4 <- convert.c(dt_4, fxs)
+      # 
+      # print(Sys.time() - start)
+      
+
+      # faster Time difference of 1.252749 secs
+      # start <- Sys.time()
+      # Create currency pairs
+      currency_pairs <- paste0(c("BRL", "CAD", "CNY", "EUR", "HKD", "AUD", "JPY", "SGD", "TWD"), "USD")
+      # Fetch FX data
+      fxs <- lapply(currency_pairs, fx.APIcall)
+      # Extract symbols and rates in one operation
+      fxs_data <- vapply(fxs, function(x) c(x$symbol, x$price), character(2))
+      # Create data frame
+      fxs <- data.frame(symbol = fxs_data[1,], price = as.numeric(fxs_data[2,]), stringsAsFactors = FALSE)
+      
+      convert_multiple <- function(dt_list, fxs) {
+        lapply(dt_list, function(dt) convert.c(dt, fxs))
+      }
+      converted_dts <- convert_multiple(list(dt_2, dt_3, dt_4), fxs)
+      dt_2 <- converted_dts[[1]]
+      dt_3 <- converted_dts[[2]]
+      dt_4 <- converted_dts[[3]]
+
+      # print(Sys.time() - start)
+    }
+    
+    
+    
+    
+    # f_dt <- dt_2 %>% inner_join(dt_3, by = c('symbol', 'calendarYear')) %>% inner_join(
+    #   dt_4 %>% select(-netIncome, -inventory, -depreciationAndAmortization),
+    #   by = c('symbol', 'calendarYear')
+    # ) %>% select(!contains(c('.x', '.y', 'cik', 'link', 'dDate'))) %>%
+    #   select(symbol, calendarYear, date, fillingDate, reportedCurrency, everything()) %>%
+    #   group_by(symbol) %>% arrange(symbol, desc(calendarYear)) %>% ungroup() %>%
+    #   mutate(fillingDate = lubridate::ymd(fillingDate)) %>%
+    #   mutate(calendarYear = as.integer(calendarYear))
+    
+    # faster
+    f_dt <- dt_2 %>% 
+      inner_join(dt_3, by = c('symbol', 'calendarYear')) %>% 
+      inner_join(select(dt_4, -netIncome, -inventory, -depreciationAndAmortization),
+                 by = c('symbol', 'calendarYear')) %>% 
+      select(-matches('\\.x|\\.y|cik|link|dDate')) %>%
       select(symbol, calendarYear, date, fillingDate, reportedCurrency, everything()) %>%
-      group_by(symbol) %>% arrange(symbol, desc(calendarYear)) %>% ungroup() %>%
-      mutate(fillingDate = ymd(fillingDate)) %>%
-      mutate(calendarYear = as.integer(calendarYear)) %>%
-      # mutate(across(!contains(c('calendarYear', 'Ratio', 'ratio', 'weightedAverageShsOutDil')) & where(is.numeric),
-      #                                                             ~ case_when(
-      #                                                               reportedCurrency == 'CNY' ~ .x * fxs[fxs['symbol'] == 'CNYUSD', 'price'],
-      #                                                               reportedCurrency == 'BRL' ~ .x * fxs[fxs['symbol'] == 'BRLUSD', 'price'],
-      #                                                               reportedCurrency == 'SEK' ~ .x * fxs[fxs['symbol'] == 'SEKUSD', 'price'],
-      #                                                               reportedCurrency == 'EUR' ~ .x * fxs[fxs['symbol'] == 'EURUSD', 'price'],
-      #                                                               reportedCurrency == 'CAD' ~ .x * fxs[fxs['symbol'] == 'CADUSD', 'price'],
-      #                                                               reportedCurrency == 'TRY' ~ .x * fxs[fxs['symbol'] == 'TRYUSD', 'price'],
-      #                                                               reportedCurrency == 'MXN' ~ .x * fxs[fxs['symbol'] == 'MXNUSD', 'price'],
-      #                                                               reportedCurrency == 'TWD' ~ .x * fxs[fxs['symbol'] == 'TWDUSD', 'price'],
-      #                                                               reportedCurrency == 'ZAR' ~ .x * fxs[fxs['symbol'] == 'ZARUSD', 'price'],
-      #                                                               reportedCurrency == 'HKD' ~ .x * fxs[fxs['symbol'] == 'HKDUSD', 'price'],
-      #                                                               reportedCurrency == 'SGD' ~ .x * fxs[fxs['symbol'] == 'SGDUSD', 'price'],
-      #                                                               reportedCurrency == 'MYR' ~ .x * fxs[fxs['symbol'] == 'MYRUSD', 'price'],
-      #                                                               reportedCurrency == 'JPY' ~ .x * fxs[fxs['symbol'] == 'JPYUSD', 'price'],
-      #                                                               reportedCurrency == 'INR' ~ .x * fxs[fxs['symbol'] == 'INRUSD', 'price'],
-      #                                                               reportedCurrency == 'KRW' ~ .x * fxs[fxs['symbol'] == 'KRWUSD', 'price'],
-      #                                                               reportedCurrency == "AUD" ~ .x * fxs[fxs['symbol'] == "AUDUSD", 'price']
-      #                                                               TRUE ~ .x
-      #                                                             )
-      # )) %>%
+      arrange(symbol, desc(calendarYear)) %>%
+      mutate(fillingDate = as.Date(fillingDate),
+             calendarYear = as.integer(calendarYear))
+    
+    f_dt <- f_dt %>%
       mutate(
         netInvestments = abs(purchasesOfInvestments) - abs(salesMaturitiesOfInvestments),
         netRepurchases = abs(commonStockRepurchased) - abs(commonStockIssued),
@@ -1371,22 +1679,47 @@ server <- function(input, output, session) {
         )
       )
     
-    dt_5 <- f_dt %>%
-      pivot_longer(
-        cols = where(is.numeric) &
-          !contains(c('symbol', 'calendarYear', 'fillingDate')),
-        names_to = 'Legend',
-        values_to = 'Value'
-      )
+    # dt_5 <- f_dt %>%
+    #   pivot_longer(
+    #     cols = where(is.numeric) &
+    #       !contains(c('symbol', 'calendarYear', 'fillingDate')),
+    #     names_to = 'Legend',
+    #     values_to = 'Value'
+    #   )
+    
+    
     
     
     stkPrfl(dt_0)
     stkPrc(dt_1)
     stkFDta(f_dt)
-    stkFdmntlsLng(dt_5)
+    # stkFdmntlsLng(dt_5)
     stkInc(dt_2)
     stkBal(dt_3)
     stkCF(dt_4)
+    
+    stkFdmntlsLng <- reactive({
+      isolate(stkFDta()) %>%pivot_longer(
+        cols = where(is.numeric) &
+          !contains(c('symbol', 'calendarYear', 'fillingDate')),
+        names_to = 'Legend',
+        values_to = 'Value'
+      )
+    })
+    
+    
+    
+    
+    
+    # update the gauge with a default value
+    last_fcf <- as.numeric(dt_4[which.max(dt_4$calendarYear), 'freeCashFlow'])
+    print(last_fcf)
+    print(10^(nchar(as.character(abs(last_fcf))) - 1))
+    
+    updateNumericInput(session, "i_strtFv", value = last_fcf / value_fcf(last_fcf), label = label_fcf(last_fcf))
+    
+    
+    
     
     
     stkMdlRctv <- reactive({
@@ -1425,21 +1758,47 @@ server <- function(input, output, session) {
     
     
     
+    
+    # end data ------------------------
+    
+    
     #### stock news ----
     output$stkNws <- renderUI({
       d_ <- general.APIcall(endpoint = "News-Stock", symbol = i_mstrSmbl()) %>% filter(site != "fool.com")
       
-      lapply(1:(min(6, nrow(d_))), function(i) {
+      # lapply(1:(min(6, nrow(d_))), function(i) {
+      #   create_news_container(
+      #     type = "News",
+      #     publishedDate = d_$publishedDate[i],
+      #     title = d_$title[i],
+      #     image = d_$image[i],
+      #     site = d_$site[i],
+      #     text = d_$text[i],
+      #     url = d_$url[i]
+      #   )
+      # })
+      
+      # start = Sys.time()
+      n <- min(6, nrow(d_))
+      d_subset <- d_[1:n, ]
+      
+      
+      result <- vector("list", n)
+      result <- Map(function(publishedDate, title, image, site, text, url) {
         create_news_container(
           type = "News",
-          publishedDate = d_$publishedDate[i],
-          title = d_$title[i],
-          image = d_$image[i],
-          site = d_$site[i],
-          text = d_$text[i],
-          url = d_$url[i]
+          publishedDate = publishedDate,
+          title = title,
+          image = image,
+          site = site,
+          text = text,
+          url = url
         )
-      })
+      }, d_subset$publishedDate, d_subset$title, d_subset$image, d_subset$site, d_subset$text, d_subset$url)
+      
+      # print(Sys.time() - start)
+      
+      return(result)
       
     })
     
@@ -1448,15 +1807,35 @@ server <- function(input, output, session) {
       d_ <- general.APIcall(endpoint = "Press-Release-Stock", symbol = i_mstrSmbl()) #%>% filter(site != "fool.com")
       
       
-      lapply(1:(min(6, nrow(d_))), function(i) {
+      # lapply(1:(min(6, nrow(d_))), function(i) {
+      #   create_news_container(
+      #     type = "Press-Release",
+      #     symbol = d_$symbol[i],
+      #     date = d_$date[i],
+      #     title = d_$title[i],
+      #     text = d_$text[i]
+      #   )
+      # })
+      
+      
+      # start = Sys.time()
+      n <- min(6, nrow(d_))
+      d_subset <- d_[1:n, ]
+      
+      
+      result <- vector("list", n)
+      result <- Map(function(symbol, date, title, text) {
         create_news_container(
           type = "Press-Release",
-          symbol = d_$symbol[i],
-          date = d_$date[i],
-          title = d_$title[i],
-          text = d_$text[i]
+          symbol = symbol,
+          date = date,
+          title = title,
+          text = text
         )
-      })
+      }, d_subset$symbol, d_subset$date, d_subset$title, d_subset$text)
+      # print(Sys.time() - start)
+      
+      return(result)
     })
     
     #### stock summary ----
@@ -1467,37 +1846,37 @@ server <- function(input, output, session) {
       mkap <- fmpc_security_mrktcap(i_mstrSmbl(), limit = 1)
       avg.over <- 3
       
-      dt <- req(stkFDta()) %>% mutate(rn = row_number()) %>% filter(rn <= avg.over) %>%
-        group_by(symbol) %>% summarise(across(
-          c(
-            'freeCashFlow',
-            'operatingIncome',
-            'netIncome',
-            'bookValue',
-            'epsdiluted',
-            'researchAndDevelopmentExpenses',
-            'totalDebt'
-          ),
-          ~ mean(.x)
-        )) %>%
-        left_join(mkap, by = "symbol") %>% mutate(
-          `P-FCF` = marketCap / freeCashFlow,
-          PE = marketCap / netIncome,
-          `P-Book` = marketCap / bookValue,
-          EV = marketCap + totalDebt,
-          `EV-FCF` = EV / freeCashFlow
-        ) %>% rename(
-          "Free Cash Flow" = freeCashFlow,
-          "Operating Income" = operatingIncome,
-          "Net Income" = netIncome,
-          "Book Value" = bookValue,
-          "EPS (Diluted)" = epsdiluted,
-          "R&D Expenses" = researchAndDevelopmentExpenses,
-          "Total Debt" = totalDebt
-        )  %>% select(-symbol, -date) %>%
-        mutate(across(
-          where(is.numeric) & !contains('CalendarYear'), ~custom_number_format(.x, decimals = 2)
-        )) #%>% mutate(across(
+      # dt <- req(stkFDta()) %>% mutate(rn = row_number()) %>% filter(rn <= avg.over) %>%
+      #   group_by(symbol) %>% summarise(across(
+      #     c(
+      #       'freeCashFlow',
+      #       'operatingIncome',
+      #       'netIncome',
+      #       'bookValue',
+      #       'epsdiluted',
+      #       'researchAndDevelopmentExpenses',
+      #       'totalDebt'
+      #     ),
+      #     ~ mean(.x)
+      #   )) %>%
+      #   left_join(mkap, by = "symbol") %>% mutate(
+      #     `P-FCF` = marketCap / freeCashFlow,
+      #     PE = marketCap / netIncome,
+      #     `P-Book` = marketCap / bookValue,
+      #     EV = marketCap + totalDebt,
+      #     `EV-FCF` = EV / freeCashFlow
+      #   ) %>% rename(
+      #     "Free Cash Flow" = freeCashFlow,
+      #     "Operating Income" = operatingIncome,
+      #     "Net Income" = netIncome,
+      #     "Book Value" = bookValue,
+      #     "EPS (Diluted)" = epsdiluted,
+      #     "R&D Expenses" = researchAndDevelopmentExpenses,
+      #     "Total Debt" = totalDebt
+      #   )  %>% select(-symbol, -date) %>%
+      #   mutate(across(
+      #     where(is.numeric) & !contains('CalendarYear'), ~custom_number_format(.x, decimals = 2)
+      #   )) #%>% mutate(across(
         #   where(is.numeric),
         #   ~ scales::label_number(
         #     scale_cut = scales::cut_short_scale(),
@@ -1505,6 +1884,38 @@ server <- function(input, output, session) {
         #   )(.x)
         # ))
       # print(dt)
+      
+      dt <- req(stkFDta()) %>% 
+        slice_head(n = avg.over) %>%
+        group_by(symbol) %>% 
+        summarise(across(
+          c('freeCashFlow', 'operatingIncome', 'netIncome', 'bookValue', 'epsdiluted',
+            'researchAndDevelopmentExpenses', 'totalDebt'),
+          mean
+        )) %>%
+        left_join(select(mkap, symbol, marketCap), by = "symbol") %>% 
+        mutate(
+          `P-FCF` = marketCap / freeCashFlow,
+          PE = marketCap / netIncome,
+          `P-Book` = marketCap / bookValue,
+          EV = marketCap + totalDebt,
+          `EV-FCF` = EV / freeCashFlow
+        ) %>% 
+        rename(
+          "Free Cash Flow" = freeCashFlow,
+          "Operating Income" = operatingIncome,
+          "Net Income" = netIncome,
+          "Book Value" = bookValue,
+          "EPS (Diluted)" = epsdiluted,
+          "R&D Expenses" = researchAndDevelopmentExpenses,
+          "Total Debt" = totalDebt
+        ) %>% 
+        select(-symbol) %>%
+        mutate(across(where(is.numeric) & !contains('CalendarYear'), 
+                      ~custom_number_format(.x, decimals = 2)))
+      
+      
+      
       
       t <- dt  %>% t(.) %>% kableExtra::kable() %>%
         kableExtra::kable_styling(
@@ -1530,7 +1941,7 @@ server <- function(input, output, session) {
       #   class = 'cell-border stripe hover'
       # )
       
-      # print(paste("General - table: ", as.character(Sys.time() - start)))
+      print(paste("General - table: ", as.character(Sys.time() - start)))
     
       
       
@@ -1541,7 +1952,8 @@ server <- function(input, output, session) {
     #### stock trivia table ----
     
     output$prfl <- renderText({
-      req(stkPrfl()) %>% select(-mktCap,
+      start <- Sys.time()
+      t <- req(stkPrfl()) %>% select(-mktCap,
                                 -description,
                                 -image,
                                 -defaultImage,
@@ -1558,21 +1970,28 @@ server <- function(input, output, session) {
         kableExtra::column_spec(1, bold = TRUE) %>%
         kableExtra::row_spec(0, bold = TRUE, color = "white") %>% # background = "#4E79A7") %>%
         kableExtra::add_header_above(c("General" = 1, " " = 1))
+      
+      print(paste("trivia: ", as.character(Sys.time() - start)))
+      
+      return(t)
     })
     
     #### stock description ----
     
     output$dscrpt <- renderUI({
-      tagList(#tags$h2("Description"), 
+      start <- Sys.time()
+      t <- tagList(#tags$h2("Description"), 
               tags$p(req(stkPrfl()) %>% pull(description)))
+      
+      print(paste("Desc: ", as.character(Sys.time() - start)))
+      return(t)
     })
     
     
     #### stock price ----
     
-    start <- Sys.time()
-    
     output$stkP <- renderPlotly({
+      start <- Sys.time()
       updatemenus <- list(
         list(
           active = 1,
@@ -1606,13 +2025,52 @@ server <- function(input, output, session) {
           ), direction = "right", pad = list(r = 10, t = 10), showactive = TRUE, x = 0.01, xanchor = "left", y = -0.05, yanchor = "top", type = "buttons", font = list(size = 10), buttonwidth = 80
         )
       )
-      # print(paste("menus: ", as.character(Sys.time() - start)))
       
-      # prm_user <- credentials()$info$premium
-      # print(prm_user)
-      #
-      d_ <- req(stkPrc()) %>%
-        mutate(calendarYear = ymd(paste0(format(date, "%Y"), "-12-31")))
+      # create_scale_button <- function(label, scale_type) {
+      #   list(
+      #     label = label,
+      #     method = 'update',
+      #     args = list(
+      #       list(visible = c(TRUE, TRUE)),
+      #       list(
+      #         yaxis = list(
+      #           type = scale_type,
+      #           nticks = 10,
+      #           tickformat = "$,.0f",
+      #           tickfont = list(size = 10),
+      #           title = ""
+      #         )
+      #       )
+      #     )
+      #   )
+      # }
+      # 
+      # updatemenus <- list(
+      #   list(
+      #     active = 1,
+      #     buttons = list(
+      #       create_scale_button("Log Scale", "log"),
+      #       create_scale_button("Linear Scale", "linear")
+      #     ),
+      #     direction = "right",
+      #     pad = list(r = 10, t = 10),
+      #     showactive = TRUE,
+      #     x = 0.01,
+      #     xanchor = "left",
+      #     y = -0.05,
+      #     yanchor = "top",
+      #     type = "buttons",
+      #     font = list(size = 10),
+      #     buttonwidth = 80
+      #   )
+      # )
+      print(paste("menus: ", as.character(Sys.time() - start)))
+      
+      
+      start <- Sys.time()
+      
+      d_ <- isolate(stkPrc()) %>%
+        mutate(calendarYear = lubridate::ymd(paste0(format(date, "%Y"), "-12-31")))
       
       i_tr <- as.data.frame(general.APIcall(endpoint = "Insider-Trans", symbol = i_mstrSmbl()))
       
@@ -1628,7 +2086,7 @@ server <- function(input, output, session) {
             totalSold = sum(totalSold),
             total_pPurchases = sum(pPurchases),
             total_sSales = sum(sSales)
-          ) %>% mutate(calendarYear = ymd(paste0(year, "-12-31")),
+          ) %>% mutate(calendarYear = lubridate::ymd(paste0(year, "-12-31")),
                        buySellRatio = totalBought / totalSold)
       } else {
         i_tr <- data.frame(
@@ -1640,25 +2098,29 @@ server <- function(input, output, session) {
           total_pPurchases = 0,
           total_sSales = 0,
           year = "2024"
-        ) %>% mutate(calendarYear = ymd(paste0(year, "-12-31")),
+        ) %>% mutate(calendarYear = lubridate::ymd(paste0(year, "-12-31")),
                      buySellRatio = totalBought / totalSold)
       }
       
       
       d_ <- d_ %>% left_join(i_tr, by = "calendarYear") %>% group_by(calendarYear) %>% mutate(y_ = last(close)) %>% ungroup()
+      min_ = min(d_$close) * .95
       
-      # print(paste("Insider: ", as.character(Sys.time() - start)))
+      print(paste("Insider: ", as.character(Sys.time() - start)))
+      
+      start <- Sys.time()
       
       p <- ggplotly(
         d_ %>% ggplot() +
-          # geom_area(
-          #   aes(x = date, y = close),
-          #   fill = '#56CC9D',
-          #   alpha = 0.05
-          # ) +
-          geom_ribbon(aes(
-            x = date, ymin = min(d_$close) * .95, ymax = close
-          ), alpha = 0.05, fill = '#56CC9D') +
+          geom_ribbon(
+            aes(
+              x = date,
+              ymin = min_,
+              ymax = close
+            ),
+            alpha = 0.05,
+            fill = '#56CC9D'
+          ) +
           geom_line(aes(x = date, y = close), colour = '#56CC9D') +
           geom_point(
             aes(
@@ -1688,30 +2150,32 @@ server <- function(input, output, session) {
             show.legend = FALSE,
             colour = '#FF7851'
           ) +
-          scale_y_continuous(labels = scales::label_number_auto()) +
+          #scale_y_continuous(labels = scales::label_number_auto()) +
           labs(x = '', y = '') +
           theme_minimal()
         # tooltip = c('text')
-      ) %>% layout(updatemenus = updatemenus
-      #              title = list(
-      #   text = "Price History",
-      #   y = 0.95,  # y position (0 to 1)
-      #   x = 0.01,   # x position (0 to 1)
-      #   xanchor = "top",
-      #   yanchor = "top",
-      #   font = list(size = 25)
-      # )
-      ) %>% style(hoverinfo = "none", traces = 1) %>% config(
-        modeBarButtonsToRemove = c('zoom', 'select')) %>% layout(
-          dragmode = FALSE
-        )
-      
-      # print(paste("Plot: ", as.character(Sys.time() - start)))
-
-    return(p)
+      ) %>% layout(updatemenus = updatemenus)  %>% 
+        style(hoverinfo = "none", traces = 1)
+                   #              title = list(
+                   #   text = "Price History",
+                   #   y = 0.95,  # y position (0 to 1)
+                   #   x = 0.01,   # x position (0 to 1)
+                   #   xanchor = "top",
+                   #   yanchor = "top",
+                   #   font = list(size = 25)
+                   # )) %>% style(hoverinfo = "none", traces = 1) %>% config(modeBarButtonsToRemove = c('zoom', 'select')) %>% layout(dragmode = FALSE)
+                   
+         print(paste("Plot: ", as.character(Sys.time() - start)))
+                   
+         return(p)
     })
     
 
+    
+    
+    
+    
+    
     #### fundamentals chart ----
     
     output$stkFndmt <- renderPlotly({
@@ -1783,7 +2247,7 @@ server <- function(input, output, session) {
       }
       
       cohort.summary <- read.csv(read.path)  %>% mutate(
-        calendarYear = ymd(calendarYear),
+        calendarYear = lubridate::ymd(calendarYear),
         min = as.numeric(min),
         med = as.numeric(med),
         max = as.numeric(max),
@@ -1856,7 +2320,7 @@ server <- function(input, output, session) {
     })
     
     
-    #### fundamentals table ----
+    ## fundamentals table ---
     
     # output$stkFndmntlsTbl <- renderDT({
     #   datatable(req(stkFDta()) %>% filter(calendarYear >= 2018), #%>%
@@ -1935,7 +2399,7 @@ server <- function(input, output, session) {
     
     #### model ----
     
-    df_store <- reactiveVal(NULL)
+    model_projection <- reactiveVal(NULL)
     
     output$stkMdl <- renderPlotly({
       
@@ -1944,7 +2408,7 @@ server <- function(input, output, session) {
       # print(input$i_trgtFrct)
       # end <- as.integer(format(input$i_trgtFrct, "%Y")) - 2024
       
-      xx <- data.frame(date = ymd(input$i_trgtFrct))
+      xx <- data.frame(date = lubridate::ymd(input$i_trgtFrct))
       
       p <- d_e %>%
         ggplot() +
@@ -1967,6 +2431,7 @@ server <- function(input, output, session) {
         geom_smooth(
           aes(x = fillingDate, y = Estimate, text = ''),
           colour = '#56CC9D',
+          alpha = 0.5,
           method = 'lm',
           se = F,
           fullrange = TRUE
@@ -2014,11 +2479,11 @@ server <- function(input, output, session) {
         )) +
         theme_minimal()
       
-      # b_ <- ggplot_build(p)
-      # b_lm_ns_ <- b_$data[[4]]
-      # b_lm <- b_$data[[5]]
+      b_ <- ggplot_build(p)
+      b_lm_ns_ <- data.frame(b_$data[[4]]) %>% select(x,y)
+      b_lm <- b_$data[[5]]
       # 
-      # df_store(b_lm_ns_)
+      model_projection(list(b_lm_ns_, b_lm))
       
       # write.csv(b_lm_ns_, 'ggplot_obj1.csv')
       # write.csv(b_lm, 'ggplot_obj2.csv')
@@ -2027,7 +2492,7 @@ server <- function(input, output, session) {
     #   
     # })
     #   
-      ggplotly(
+      p <- ggplotly(
         p
       ) %>% style(hoverinfo = "text") %>% style(hoverinfo = "none", traces = c(1, 4, 5)) %>% style(hovertemplate = "Estimate: %{y:.2f}", traces = c(4,5)) %>%
         config(
@@ -2036,8 +2501,12 @@ server <- function(input, output, session) {
         ) %>% layout(
           dragmode = FALSE
         )
+      
+      return(p)
     })
 
+    
+    multpl_ <- reactiveVal(NULL)
     
     #### model table ----
     
@@ -2046,6 +2515,8 @@ server <- function(input, output, session) {
       tbl <- stkMdlRctv() %>%
         dplyr::distinct(calendarYear, fillingDate, profit, multiple, Estimate) %>%
         arrange(desc(calendarYear)) %>% na.omit(.)
+      
+      multpl_(unique(tbl %>% pull(multiple))[1])
       
       datatable(
         tbl %>%
@@ -2081,7 +2552,7 @@ server <- function(input, output, session) {
       
       # x %>% mutate(format(as.Date(x), "%y"))
       # 
-      # g_tbl <- df_store() %>% mutate(yr = format(as.Date(x), "%Y"), date = format(as.Date(x), "%Y-%m-%d")) %>% select(x, y, yr, date)
+      # g_tbl <- model_projection() %>% mutate(yr = format(as.Date(x), "%Y"), date = format(as.Date(x), "%Y-%m-%d")) %>% select(x, y, yr, date)
       # e_tbl <- stkMdlRctv() %>%
       #     dplyr::distinct(calendarYear, fillingDate, profit, multiple, Estimate) %>%
       #     arrange(desc(calendarYear))
@@ -2096,6 +2567,8 @@ server <- function(input, output, session) {
       
     })
     
+    end_value <- reactiveVal(NULL)
+    price_ <- reactiveVal(NULL)
     
     
     #### valuation ----
@@ -2238,6 +2711,253 @@ server <- function(input, output, session) {
         )
       
     })
+    
+    
+    fv_ <- reactiveVal(NULL)
+    cfs_lv <- reactiveVal(NULL)
+    cfs_ <- reactiveVal(NULL)
+    cfs_pv <- reactiveVal(NULL)
+    cfs_tv <- reactiveVal(NULL)
+    #### DCF gauge ----
+    
+    output$mdlGauge <- renderPlotly({
+      df <- stkMdlRctv()
+      latest_date <- which.max(df$date)
+      price <- as.numeric(df[latest_date, "close"])
+      
+      inc <- stkInc()
+      fcf <- stkCF()
+      shares_outst <- as.numeric(inc[which.max(inc$calendarYear), 'weightedAverageShsOutDil'])
+      last_fcf <- as.numeric(fcf[which.max(fcf$calendarYear), 'freeCashFlow'])
+      # 
+      # updateNumericInput(session, "i_strtFv", label = label_fcf(input$i_strtFv))
+      
+      tbl <- stkMdlRctv() %>%
+        dplyr::distinct(calendarYear, fillingDate, profit, multiple, Estimate) %>%
+        arrange(desc(calendarYear)) %>% na.omit(.)
+      
+      profit <- as.numeric(tbl[which.max(tbl$calendarYear), "profit"])
+      
+      rescaling_factor = value_fcf(last_fcf)
+      
+      # print(rescaling_factor)
+      
+      cash_flows <- (input$i_strtFv * rescaling_factor) * ((1+input$i_grwthRt/100) ^ seq(1, input$i_fvHrzn))
+      pv <- sum(cash_flows / (1 + input$i_dscntRt/100)^(1:input$i_fvHrzn))
+      tv <- (cash_flows[length(cash_flows)] * input$i_extMltpl) / (1 + input$i_dscntRt/100)^input$i_fvHrzn
+      # 
+      # print(cash_flows)
+      # print(pv)
+      # print(tv)
+      
+      fv <- pv + tv
+      fvpshr <- fv / shares_outst
+      
+      # store value in reactive component
+      cfs_lv(cash_flows[length(cash_flows)])
+      fv_(fvpshr)
+      cfs_(sum(cash_flows))
+      cfs_pv(pv)
+      cfs_tv(tv)
+      
+      
+      top_range <- max(fvpshr * 1.3)
+      min_range <- min(fvpshr * 0.7)
+      
+      steps <- seq(min_range, top_range, length.out = 6)
+      # print(steps)
+      
+      
+      # Define colors and labels
+      colors <- c('#56CC9D', '#7BE495', '#FFD166', '#FF9B71', '#FF7851')
+      labels <- c('Overvalued', 'Light Green', 'Fair Value', 'Amber', 'Undervalued')
+      
+      # Create the gauge chart
+      plot_ly(
+        type = "indicator",
+        mode = "gauge+number",
+        value = round(fvpshr, 2),
+        gauge = list(
+          axis = list(range = list(min_range, top_range), tickwidth = 1, tickcolor = "transparent"),
+          bar = list(color = "transparent"),
+          bgcolor = "white",
+          borderwidth = 2,
+          bordercolor = "gray",
+          steps = list(
+            list(range = c(steps[1], steps[2]), color = colors[1]),
+            list(range = c(steps[2], steps[3]), color = colors[2]),
+            list(range = c(steps[3], steps[4]), color = colors[3]),
+            list(range = c(steps[4], steps[5]), color = colors[4]),
+            list(range = c(steps[5], steps[6]), color = colors[5])
+          ),
+          threshold = list(
+            line = list(color = "red", width = 4),
+            thickness = 0.75,
+            value = price
+          )
+        )
+      ) %>%
+        layout(
+          margin = list(l=20, r=30),
+          annotations = list(
+            list(
+              x = 0.5 + 0.45 * cos(pi * 0.05),
+              y = 0.5 + 0.45 * sin(pi * 0.1),
+              text = labels[1],
+              showarrow = FALSE,
+              xanchor = 'center',
+              yanchor = 'middle'
+            ),
+            list(
+              x = 0.5 + 0.45 * cos(pi * 0.5),
+              y = 0.1 + 0.45 * sin(pi * 0.35),
+              text = labels[3],
+              showarrow = TRUE,
+              xanchor = 'center',
+              yanchor = 'middle'
+            ),
+            list(
+              x = 0.5 + 0.45 * cos(pi * 0.95),
+              y = 0.5 + 0.45 * sin(pi * 0.9),
+              text = labels[5],
+              showarrow = FALSE,
+              xanchor = 'center',
+              yanchor = 'middle'
+            )
+          )
+        ) %>%
+        config(displayModeBar = FALSE) %>%
+        layout(autosize = TRUE, margin = list(t = 40, b = 40, l = 40, r = 40))
+    })
+    
+    output$dcf_controls1 <- renderText({
+
+      # controls helper
+      
+      # prefer another approach
+      
+      # # spline model implied CAGR
+      # projection <- model_projection()[[1]] %>% mutate(x = lubridate::as_date(x))
+      # print(projection)
+      # 
+      # min_yr <-  lubridate::year(min(projection %>% pull(x)))
+      # print(min_yr)
+      # end_projection <- as.numeric(projection[which.max(projection$x), "y"])
+      # start_projection <- as.numeric(projection[which.min(projection$x), "y"])
+      # print(start_projection)
+      # print(end_projection)
+      # cagr <- round(((end_projection / start_projection)^( 1 / (lubridate::year(input$i_trgtFrct) - min_yr)) - 1) * 100, 2)
+      
+      
+      # print('----')
+      # print(input$i_stkVltnSldr[1])
+      
+      period_start <- as.integer(format(as.Date(input$i_stkVltnSldr[1]), "%Y"))
+      period_end <- as.integer(format(as.Date(input$i_stkVltnSldr[2]), "%Y"))
+      inc_ <- stkInc() %>% mutate(calendarYear = as.integer(calendarYear), operatingIncome = as.numeric(operatingIncome)) %>% filter(between(calendarYear, period_start, period_end))
+      
+     
+      
+      # x <- fmpc_financial_bs_is_cf('TSN', statement = 'income', quarterly = FALSE, limit = 20) %>% mutate(operatingIncome = as.numeric(operatingIncome), calendarYear = as.integer(calendarYear))
+      
+      # Calculate min and max years
+      min_year <- min(inc_$calendarYear)
+      max_year <- max(inc_$calendarYear)
+      
+      # Fit linear model
+      model <- lm(operatingIncome ~ calendarYear, data = inc_)
+      
+      # Predict values for start and end years
+      start_pred <- predict(model, newdata = data.frame(calendarYear = min_year))
+      end_pred <- predict(model, newdata = data.frame(calendarYear = max_year))
+      
+      # Calculate growth rate
+      years_diff <- max_year - min_year
+      growth_rate <- ((end_pred / start_pred) ^ (1 / years_diff) - 1) * 100
+      
+      # Round growth rate to 2 decimal places
+      cagr <- round(growth_rate, 2)
+      
+      # print(min_year)
+      # print(max_year)
+      # print(start_pred)
+      # print(end_pred)
+      
+      #return html
+      return(paste("Earnings Trend Implied CAGR (%):", cagr))
+      
+      
+    })
+    
+    
+    
+    
+    
+    output$dcf_controls2 <- renderText({
+      # latest stock price
+      df <- stkMdlRctv()
+      latest_date <- which.max(df$date)
+      price <- as.numeric(df[latest_date, "close"])
+      
+      #return html
+      paste('Latest Stock Price:', price)
+    })
+    
+    
+    
+    output$dcf_results1 <- renderText({
+      
+      
+      cfs_lv <- cfs_lv()
+      multpl_ <- multpl_()
+      # cfs_ <- cfs_()
+      # cfs_pv <- cfs_pv()
+      # cfs_tv <- cfs_tv()
+      
+      statement <- paste("End Period Profit x Historical Multiple:",
+                         scales::label_number(scale_cut = scales::cut_short_scale())(cfs_lv * multpl_)
+                         # '\n',
+                         # 'Nominal Future Cash Flows: ',
+                         # round(cfs_, 2),
+                         # '\n',
+                         # 'NPV Future Cash Flows:',
+                         # round(cfs_pv, 2),
+                         # '\n',
+                         # 'Terminal Value:',
+                         # round(cfs_tv, 2)
+      )
+      
+      return(statement)
+      
+    })
+    
+    
+    scales::label_number(scale_cut = scales::cut_short_scale())(100000)
+    
+    output$dcf_results2 <- renderText({
+      cfs_ <- cfs_()
+      
+      statement <- paste("Nominal Future Profit:",
+                         scales::label_number(scale_cut = scales::cut_short_scale())(cfs_) )
+      return(statement)
+    })
+    
+    output$dcf_results3 <- renderText({
+      cfs_pv <- cfs_pv()
+      
+      statement <- paste("Net Present Value:",
+                         scales::label_number(scale_cut = scales::cut_short_scale())(cfs_pv) )
+      return(statement)
+    })
+    
+    output$dcf_results4 <- renderText({
+      cfs_tv <- cfs_tv()
+      
+      statement <- paste("Terminal Value:",
+                         scales::label_number(scale_cut = scales::cut_short_scale())(cfs_tv) )
+      return(statement)
+    })
+    
     
     #### capital allocation ----
     
@@ -2470,8 +3190,8 @@ server <- function(input, output, session) {
         as.character(input$trnscrptQrtr),
         " ",
         as.character(input$trnscrptYr),
-        " earnings call transcript, focusing on key financial metrics, management's outlook, and any significant strategic changes. Respond to the query by providing a structured response with an executive summary, main points using bullet points, justified by key figures, and historical parallels, if relevant. Consider current market conditions and the company's position in its industry when providing your analysis.",
-        " Format response in HTML for R Shiny renderUI (for example, for bold, use a div with appropriate style parameter), don't reflect this fact in the response. Avoid wrapping in ``` quotes. End with a finished sentence. This is the transcript: ",
+        " earnings call transcript, focusing on key financial metrics, management's outlook, and any significant strategic changes. Respond to the query by providing a structured response such as an executive summary, main points using bullet points, justified by key figures, and historical parallels, if relevant. Consider current market conditions and the company's position in its industry when providing your analysis.",
+        " Format response in HTML for R Shiny renderUI (for example, for bold, use a div with appropriate style parameter), don't reflect this fact in the response. Avoid wrapping in ``` quotes. Always end with a finished sentence. This is the transcript: ",
         # substr(
         trnscrpt_() %>% pull(content)
         # , 1, 5000)
@@ -2487,28 +3207,16 @@ server <- function(input, output, session) {
     #   max_tokens = 700,
     #   temperature = 0.3
     # )
-    
-    
-    tryCatch(
-      {
+    httr::set_config(httr::config(timeout = 600))
+
         completion <- openai::create_chat_completion(
           
           model = "gpt-4o-mini",
           messages = msgs,
-          max_tokens = 700,
-          temperature = 0.3
+          max_tokens = 800,
+          temperature = 0.4
         )
-      },
-      error = function(e) {
-        completion <- openai::create_chat_completion(
-          
-          model = "gpt-4o-mini",
-          messages = msgs,
-          max_tokens = 700,
-          temperature = 0.3
-        )
-      }
-    )
+
     
     resp_ <- list(list(role = "assistant", content = completion$choices$message.content)) 
     updateTextAreaInput(session, "i_oai", value = "")
@@ -2522,6 +3230,88 @@ server <- function(input, output, session) {
     })
     
     #  }
+    
+  })
+  
+  
+  #### Screener plot ----
+  
+  output$screenerPlot <- renderPlotly({
+    
+    # source("ScreenerMarket.R")
+    
+    # dta_2_0 <- read.csv('historyvsmarket_n2000_19082024.csv') %>% select(-X) %>% mutate(date = lubridate::ymd(date))  
+   #  
+   #  dta_2_0 <- RSQLite::dbGetQuery(con, "SELECT symbol, date, close, close_mkt, mktCap FROM historyvsmarket_n2000_19082024 WHERE flags not like 'NA' and flags not like 'notTrading'") %>% mutate(date = lubridate::ymd(date))  
+   #  
+   #  dta_2 <- dta_2_0 %>% filter(date >= lubridate::ymd(input$i_startScreener) & date <= lubridate::ymd(input$i_endScreener))
+   #  
+   #  # symbol-wise market
+   #  dta_2_fst <- dta_2 %>% group_by(symbol) %>% summarise(
+   #    fst_mkt = first(close_mkt, order_by = date),
+   #    fst_stk = first(close, order_by = date),
+   #    mx_stk = max(close),
+   #    mn_stk = min(close)
+   #  )
+   #  # scaled performance
+   #  dta_3 <- dta_2 %>% left_join(dta_2_fst, by = c("symbol")) %>% mutate(
+   #    scld_cl_1 = round(close / mx_stk, 2),
+   #    scld_cl_fst = round(close / fst_stk, 2),
+   #    scld_sp5 = round(close_mkt / fst_mkt, 2),
+   #    returnVsMarket = round(scld_cl_fst / scld_sp5, 2)
+   #  ) #%>% filter(mn_stk > 1) #%>% filter(!symbol %in% c('REGCO', 'VFS', 'VFSWW')) #%>% filter(exchangeShortName.x != "NASDAQ")
+   #  
+   #  
+   #  # dta_4 <- dta_3 %>% filter(!grepl('notTrading', flags))
+   #  
+   #  d_ <- dta_3 %>% group_by(symbol) %>% arrange(date) %>% summarise(d__ = adj.euclidean.dist.screener(scld_cl_fst, scld_sp5)) %>% arrange(desc(d_)) #%>% mutate(q_1 = dense_rank(q_)) #%>% mutate(q_ = ifelse(symbol == "^GSPC", ))
+   #  
+   #  
+   #  # %>% mutate(q_20 = cut(
+   #  #   d_,
+   #  #   breaks = quantile(d_, probs = seq(0, 1, 0.05)),
+   #  #   labels = paste("Quantile", seq(1, 20, 1))
+   #  # )) %>% mutate(q_5 = cut(
+   #  #   d_,
+   #  #   breaks = quantile(d_, probs = seq(0, 1, 0.2)),
+   #  #   labels = paste("Quintile", seq(1, 5, 1))
+   #  # )
+   #  
+   #  dta_d_ <- dta_3 %>% left_join(d_)
+   # # d_s_ <- dta_d_ %>% filter(mktCap > 1 * 10 ^ 9) %>% distinct(symbol, q_20, q_5) %>% group_by(q_5) %>% slice_sample(n = input$i_screenerToPlot) %>% pull(symbol)
+   #  
+   #  
+   #  print(dta_d_)
+   #  print(d_)
+   #  
+   #  
+   #  preff <- d_ %>% slice_max(order_by = d__, n = input$i_screenerToPlot) %>% pull(symbol)
+   #  
+   #  
+   #  # visualise 3
+   #  ggplotly(
+   #    dta_d_ %>%
+   #      filter(symbol %in% preff) %>%
+   #      #filter(q_5 %in% paste("Quintile", c(5, 4, 3, 2, 1))) %>%
+   #      ggplot() + geom_line(aes(
+   #        x = date, y = returnVsMarket, #group = symbol,
+   #        col = symbol
+   #      )) + geom_hline(
+   #        yintercept = 1,
+   #        col = 'red',
+   #        alpha = 0.5,
+   #        linetype = 'dashed'
+   #      ) + 
+   #      #labs(
+   #       # title = "Scaled Stock Performance",
+   #        #subtitle = paste0("Over $", round(mkap /
+   #         #                                   1000000000, 0), "b"),
+   #        #x = ''
+   #      #) + 
+   #      #facet_wrap(vars(q_5), scales = 'free', nrow = 3) + 
+   #      theme_minimal() + theme(legend.position = "bottom")
+   #  ) %>% layout(title = 'Relative Stock Performance vs. SP500')
+    
     
   })
   

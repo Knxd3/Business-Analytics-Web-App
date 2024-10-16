@@ -52,7 +52,7 @@ fx.APIcall <- function(currency.pair) {
 
 
 #### general API call ----
-general.APIcall <- function(endpoint, columns = NULL, symbol = NULL) {
+general.APIcall <- function(endpoint, columns = NULL, symbol = NULL, start = NULL) {
   if (endpoint == "Press-Release") {
     url = paste0('https://financialmodelingprep.com/api/v3/press-releases?page=0&apikey=', Sys.getenv("API_FMPC"))
   } else if (endpoint == "News") {
@@ -67,6 +67,10 @@ general.APIcall <- function(endpoint, columns = NULL, symbol = NULL) {
     url = paste0("https://financialmodelingprep.com/api/v4/insider-roaster-statistic?symbol=", symbol, "&apikey=", Sys.getenv("API_FMPC"))
   } else if (endpoint %in% c("Crude-Oil", "Nat-Gas", "Beef", "Corn")) {
     url = paste0("https://financialmodelingprep.com/api/v3/historical-chart/1month/", symbol, "?from=2004-02-10&to=", as.character(Sys.Date()), "&apikey=", Sys.getenv("API_FMPC"))
+  } else if (endpoint == "Price") {
+    end <- as.character(Sys.Date())
+    start <- as.character(start)
+    url = paste0('https://financialmodelingprep.com/api/v3/historical-price-full/', symbol, '?from=', start, '&to=', end, '&serietype=line', "&apikey=", Sys.getenv("API_FMPC"))
   }
   
   
@@ -75,6 +79,7 @@ general.APIcall <- function(endpoint, columns = NULL, symbol = NULL) {
   content_json <- base::rawToChar(raw.content)
   content_df <- jsonlite::fromJSON(content_json)
   if (is.null(columns)) {
+    
     content_out <- content_df
   }
   else {
@@ -182,3 +187,127 @@ custom_number_format <- function(x,
   
   sapply(x, format_number)
 }
+
+
+# Calculate the Compounded Annual Return
+cagr <- function(start, end, periods) {
+  return ((end - start)^(1/periods))
+}
+
+# Discounted Cash Flow w terminal growth
+dcf_valuation <- function(cash_flows, growth_rate, discount_rate, terminal_growth_rate, periods = 5) {
+  
+  # Calculate present value of projected cash flows
+  pv_cash_flows <- sapply(1:periods, function(t) {
+    cf <- cash_flows * (1 + growth_rate)^t
+    cf / (1 + discount_rate)^t
+  })
+  
+  # Calculate terminal value
+  terminal_value <- (cash_flows * (1 + growth_rate)^periods * (1 + terminal_growth_rate)) / 
+    (discount_rate - terminal_growth_rate)
+  
+  # Discount terminal value
+  pv_terminal_value <- terminal_value / (1 + discount_rate)^periods
+  
+  # Calculate enterprise value
+  enterprise_value <- sum(pv_cash_flows) + pv_terminal_value
+  
+  return(enterprise_value)
+}
+
+
+# Convert Currency
+
+# convert.c <- function(df, fxs) {
+#   
+#   df <- df %>%
+#     mutate(across(!contains(c('calendarYear', 'Ratio', 'ratio', 'cik', 'weightedAverageShsOutDil')) & where(is.numeric),
+#                   ~ case_when(
+#                     reportedCurrency == 'CNY' ~ .x * fxs[fxs['symbol'] == 'CNYUSD', 'price'],
+#                     reportedCurrency == 'BRL' ~ .x * fxs[fxs['symbol'] == 'BRLUSD', 'price'],
+#                     # reportedCurrency == 'SEK' ~ .x * fxs[fxs['symbol'] == 'SEKUSD', 'price'],
+#                     reportedCurrency == 'EUR' ~ .x * fxs[fxs['symbol'] == 'EURUSD', 'price'],
+#                     reportedCurrency == 'CAD' ~ .x * fxs[fxs['symbol'] == 'CADUSD', 'price'],
+#                     # reportedCurrency == 'TRY' ~ .x * fxs[fxs['symbol'] == 'TRYUSD', 'price'],
+#                     # reportedCurrency == 'MXN' ~ .x * fxs[fxs['symbol'] == 'MXNUSD', 'price'],
+#                     reportedCurrency == 'TWD' ~ .x * fxs[fxs['symbol'] == 'TWDUSD', 'price'],
+#                     # reportedCurrency == 'ZAR' ~ .x * fxs[fxs['symbol'] == 'ZARUSD', 'price'],
+#                     reportedCurrency == 'HKD' ~ .x * fxs[fxs['symbol'] == 'HKDUSD', 'price'],
+#                     reportedCurrency == 'SGD' ~ .x * fxs[fxs['symbol'] == 'SGDUSD', 'price'],
+#                     # reportedCurrency == 'MYR' ~ .x * fxs[fxs['symbol'] == 'MYRUSD', 'price'],
+#                     reportedCurrency == 'JPY' ~ .x * fxs[fxs['symbol'] == 'JPYUSD', 'price'],
+#                     # reportedCurrency == 'INR' ~ .x * fxs[fxs['symbol'] == 'INRUSD', 'price'],
+#                     # reportedCurrency == 'KRW' ~ .x * fxs[fxs['symbol'] == 'KRWUSD', 'price'],
+#                     reportedCurrency == "AUD" ~ .x * fxs[fxs['symbol'] == "AUDUSD", 'price'],
+#                     TRUE ~ .x
+#                   )
+#     ))
+#   
+#   return(df)
+# }
+
+convert.c <- function(df, fxs) {
+  # Create a named vector of exchange rates
+  fx_rates <- setNames(fxs$price, fxs$symbol)
+  
+  # Create a vector of currency pairs
+  currency_pairs <- paste0(df$reportedCurrency, "USD")
+  
+  # Create a vector of multipliers
+  multipliers <- fx_rates[currency_pairs]
+  multipliers[is.na(multipliers)] <- 1  # Set multiplier to 1 for USD and unmatched currencies
+  
+  # Define columns to exclude from conversion
+  exclude_cols <- c('calendarYear', 'Ratio', 'ratio', 'cik', 'weightedAverageShsOutDil')
+  
+  # Identify numeric columns to convert
+  cols_to_convert <- sapply(df, is.numeric) & 
+    !names(df) %in% exclude_cols &
+    !grepl("Ratio|ratio", names(df))
+  
+  # Perform vectorized multiplication
+  df[, cols_to_convert] <- sweep(df[, cols_to_convert, drop = FALSE], 
+                                 1, multipliers, `*`)
+  
+  return(df)
+}
+
+
+
+label_fcf <- function(last_fcf) {
+  num_digits <- nchar(as.character(abs(last_fcf)))
+  
+  # print(nchar(as.character(abs(last_fcf))))
+  suffix <- if (num_digits > 9) {
+    "(B)"  # Billions
+  } else if (num_digits > 6) {
+    "(M)"  # Millions
+  } else if (num_digits > 3) {
+    "(T)"  # Thousands
+  } else {
+    ""     # Hundreds or less
+  }
+  
+  label <- paste0('Start Value ', suffix)
+  return(label)
+}
+
+
+value_fcf <- function(last_fcf) {
+  num_digits <- nchar(as.character(abs(last_fcf)))
+  
+  # print(nchar(as.character(abs(last_fcf))))
+  multiple <- if (num_digits > 9) {
+    10^9  # Billions
+  } else if (num_digits > 6) {
+    10^6  # Millions
+  } else if (num_digits > 3) {
+    10^3  # Thousands
+  } else {
+    1     # Hundreds or less
+  }
+  
+  return(multiple)
+}
+

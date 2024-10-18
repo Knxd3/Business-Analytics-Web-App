@@ -52,7 +52,7 @@ fx.APIcall <- function(currency.pair) {
 
 
 #### general API call ----
-general.APIcall <- function(endpoint, columns = NULL, symbol = NULL, start = NULL) {
+general.APIcall <- function(endpoint, columns = NULL, symbol = NULL, start = NULL, quarter = NULL, form = NULL) {
   if (endpoint == "Press-Release") {
     url = paste0('https://financialmodelingprep.com/api/v3/press-releases?page=0&apikey=', Sys.getenv("API_FMPC"))
   } else if (endpoint == "News") {
@@ -71,7 +71,17 @@ general.APIcall <- function(endpoint, columns = NULL, symbol = NULL, start = NUL
     end <- as.character(Sys.Date())
     start <- as.character(start)
     url = paste0('https://financialmodelingprep.com/api/v3/historical-price-full/', symbol, '?from=', start, '&to=', end, '&serietype=line', "&apikey=", Sys.getenv("API_FMPC"))
-  }
+  } else if (endpoint == "Analysts") {
+    url = paste0('https://financialmodelingprep.com/api/v3/analyst-stock-recommendations/', symbol, '?apikey=', Sys.getenv("API_FMPC"))
+  } else if (endpoint == "10k") {
+    url = paste0('https://financialmodelingprep.com/api/v4/financial-reports-json?symbol=', symbol, '&year=', as.character(start), '&period=', quarter, '&apikey=', Sys.getenv("API_FMPC"))
+  } else if (endpoint == "revenue-product") {
+    url = paste0('https://financialmodelingprep.com/api/v4/revenue-product-segmentation?symbol=', symbol, '&structure=flat&period=annual&apikey=' , Sys.getenv("API_FMPC"))
+  } else if (endpoint == "revenue-geo") {
+    url = paste0('https://financialmodelingprep.com/api/v4/revenue-geographic-segmentation?symbol=', symbol, '&structure=flat&period=annual&apikey=' , Sys.getenv("API_FMPC"))
+  } else if (endpoint == "10k-sec") {
+    url = paste0('https://financialmodelingprep.com/api/v3/sec_filings/', symbol, '?type=', form, '&page=0&apikey=', Sys.getenv("API_FMPC"))
+    }
   
   
   res <- httr::GET(url)
@@ -88,7 +98,13 @@ general.APIcall <- function(endpoint, columns = NULL, symbol = NULL, start = NUL
   return(content_out)
 }
 
-
+# 
+# res <- httr::GET("https://financialmodelingprep.com/api/v3/sec_filings/AAPL?type=10-k&page=0
+# raw.content <- httr::content(res, as = 'raw')
+# content_json <- base::rawToChar(raw.content)
+# content_df <- jsonlite::fromJSON(content_json)
+# 
+# content_df
 
 #### news/press-release div container ----
 create_news_container <- function(symbol, type = "News", date = NA, title = NA, text = NA, publishedDate = NA, image = NA, site = NA, url = NA) {
@@ -310,4 +326,11 @@ value_fcf <- function(last_fcf) {
   
   return(multiple)
 }
+
+# user_agent <- "
+# sec_f <- httr::GET(url = 'https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm', config = httr::user_agent(user_agent))
+# content_ <- httr::content(sec_f, 'text')
+# content_
+
+
 

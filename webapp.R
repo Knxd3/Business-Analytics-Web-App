@@ -298,7 +298,7 @@ ui <- fluidPage(
             div(
               class = "card-body",
               h5(class = "card-title", "Stock Price"),
-              plotlyOutput('stkP')
+              plotlyOutput('stkP') %>% shinycssloaders::withSpinner(type = 5, color = "#0dc5c1", size = 0.5)
             )
           ),
           div(
@@ -321,8 +321,16 @@ ui <- fluidPage(
             class = "card shadow-sm",
             div(
               class = "card-body",
-              h5(class = "card-title", "Profile"),
+              h5(class = "card-title", "Profile"), 
               tableOutput("prfl")
+            )
+          ),
+          div(
+            class = "card shadow-sm",
+            div(
+              class = "card-body",
+              h5(class = "card-title", "Analyst Guidance"),
+              plotlyOutput("anlstEstmts")
             )
           )
         ),
@@ -343,7 +351,23 @@ ui <- fluidPage(
           )
         )
       )
-    )
+    ),
+    # tags$head(
+    #   tags$script(HTML("
+    #   var tabRendered = {};
+    #   Shiny.addCustomMessageHandler('tabRendered', function(message) {
+    #   if (message.reset) {
+    #   tabRendered = {};
+    #   console.log('All tabs reset');
+    #   }
+    #    else if (!tabRendered[message.tabName]) {
+    #       console.log(message.tabName + ' has finished rendering');
+    #       tabRendered[message.tabName] = true;
+    #       Shiny.setInputValue('tabReady', message.tabName);
+    #     }
+    #   });
+    # "))
+    # )
   ),
   #### tab fundamentals ----
   tabPanel(
@@ -411,7 +435,7 @@ ui <- fluidPage(
             div(
               class = "card-body",
               h5(class = "card-title", "Stock Fundamentals"),
-              plotlyOutput('stkFndmt')
+              plotlyOutput('stkFndmt') %>% shinycssloaders::withSpinner(type = 5, color = "#0dc5c1", size = 0.5)
             )
           ),
           div(
@@ -525,7 +549,7 @@ tabPanel(
           div(
             class = "card-body",
             h5(class = "card-title", "Stock Model"),
-            plotlyOutput('stkMdl', height = "650px")
+            plotlyOutput('stkMdl', height = "650px") %>% shinycssloaders::withSpinner(type = 5, color = "#0dc5c1", size = 0.5)
           )
         ),
         div(
@@ -611,7 +635,7 @@ tabPanel(
           div(
             class = "card-body",
             h5(class = "card-title", "Valuation Chart"),
-            plotlyOutput('vltn', height = "1500px")
+            plotlyOutput('vltn', height = "1500px") %>% shinycssloaders::withSpinner(type = 5, color = "#0dc5c1", size = 0.5)
           )
         )
       )
@@ -757,7 +781,7 @@ tabPanel(
           div(
             class = "card-body",
             h5(class = "card-title", "Capital Allocation Chart"),
-            plotlyOutput('cptlAllctn', height = "650px")
+            plotlyOutput('cptlAllctn', height = "650px") %>% shinycssloaders::withSpinner(type = 5, color = "#0dc5c1", size = 0.5)
           )
         )
       )
@@ -765,72 +789,208 @@ tabPanel(
   )
 ),
 
-#### transcripts ----
+#### Transcripts ----
 tabPanel(
-  title = "Transcripts",
-  id = "Transcripts",
+  title = "Financials",
+  id = "Financials",
+  
   div(
     class = "container-fluid",
     style = "max-width: 1400px; margin: auto;",
     
-    div(
-      class = "row",
-      
-      # Sidebar
-      div(
-        class = "col-md-3",
-        div(
-          class = "card shadow-sm mb-4",
-          div(
-            class = "card-body",
-            h5(class = "card-title", "Transcript Controls"),
-            numericInput(
-              "trnscrptYr",
-              "Select Year:",
-              value = as.integer(format(Sys.Date(), "%Y")),
-              min = 1990,
-              max = as.integer(format(Sys.Date(), "%Y")) + 2,
-              step = 1
-            ),
-            numericInput(
-              "trnscrptQrtr",
-              "Select Quarter:",
-              value = 1,
-              min = 1,
-              max = 4,
-              step = 1
-            ),
-            hr(),
-            h6("AI Assistant"),
-            textAreaInput(
-              "i_oai",
-              "Ask the AI assistant:",
-              rows = 3,
-              value = "Summarise material information.",
-              placeholder = "Summarise the quarter's material investor information."
-            ),
-            actionButton('oaiBtn', 'Submit', class = "btn btn-primary mt-2", disabled = TRUE),
-            hr(),
-            h6("Chat History"),
-            uiOutput("chtHst")
-          )
-        )
+    navset_tab(
+      nav_panel("Transcripts", 
+                div(
+                  class = "row",
+                  
+                  # Sidebar
+                  div(
+                    class = "col-md-3",
+                    div(
+                      class = "card shadow-sm mb-4",
+                      div(
+                        class = "card-body",
+                        h5(class = "card-title", "Transcript Controls"),
+                        numericInput(
+                          "trnscrptYr",
+                          "Select Year:",
+                          value = as.integer(format(Sys.Date(), "%Y")),
+                          min = 1990,
+                          max = as.integer(format(Sys.Date(), "%Y")) + 2,
+                          step = 1
+                        ),
+                        numericInput(
+                          "trnscrptQrtr",
+                          "Select Quarter:",
+                          value = 1,
+                          min = 1,
+                          max = 4,
+                          step = 1
+                        ),
+                        hr(),
+                        h6("AI Assistant"),
+                        textAreaInput(
+                          "i_oai",
+                          "Ask the AI assistant:",
+                          rows = 3,
+                          value = "Summarise material information.",
+                          placeholder = "Summarise the quarter's material investor information."
+                        ),
+                        actionButton('oaiBtn', 'Submit', class = "btn btn-primary mt-2", disabled = TRUE),
+                        hr(),
+                        h6("Chat History"),
+                        uiOutput("chtHst") %>% shinycssloaders::withSpinner(type = 5, color = "#0dc5c1", size = 0.5)
+                      )
+                    )
+                  ),
+                  
+                  # Main content
+                  div(
+                    class = "col-md-9",
+                    div(
+                      class = "card shadow-sm",
+                      div(
+                        class = "card-body",
+                        h5(class = "card-title", "Transcript"),
+                        uiOutput('trnscrpt') %>% shinycssloaders::withSpinner(type = 5, color = "#0dc5c1", size = 0.5)
+                      )
+                    )
+                  )
+                )
       ),
       
-      # Main content
-      div(
-        class = "col-md-9",
-        div(
-          class = "card shadow-sm",
-          div(
-            class = "card-body",
-            h5(class = "card-title", "Transcript"),
-            uiOutput('trnscrpt')
-          )
-        )
-      )
-    )
+      #### Form 10-K ----
+      
+      nav_panel("SEC Filings", 
+                div(
+                  class = "row",
+                  
+                  ## old method with FMPC data not EDGAR
+                  # # Sidebar
+                  # div(
+                  #   class = "col-md-3",
+                  #   div(
+                  #     class = "card shadow-sm mb-4",
+                  #     div(
+                  #       class = "card-body",
+                  #       h5(class = "card-title", "Transcript Controls"),
+                  #       numericInput(
+                  #         "trnscrptYr10k",
+                  #         "Select Year:",
+                  #         value = as.integer(format(Sys.Date(), "%Y")),
+                  #         min = 1990,
+                  #         max = as.integer(format(Sys.Date(), "%Y")) + 2,
+                  #         step = 1
+                  #       ),
+                  #       selectInput(
+                  #         "trnscrptQrtr10k",
+                  #         "Select Quarter:",
+                  #         choices = c("FY", "Q1", "Q2", "Q3", "Q4"),
+                  #         selected = "FY"
+                  #       ),
+                  #       hr(),
+                  #       h6("AI Assistant"),
+                  #       textAreaInput(
+                  #         "i_oai10k",
+                  #         "Ask the AI assistant:",
+                  #         rows = 3,
+                  #         value = "Summarise material information.",
+                  #         placeholder = "Summarise the quarter's material investor information."
+                  #       ),
+                  #       actionButton('oaiBtn10k', 'Submit', class = "btn btn-primary mt-2", disabled = TRUE),
+                  #       hr(),
+                  #       h6("Chat History"),
+                  #       uiOutput("chtHst10k")
+                  #     )
+                  #   )
+                  # ),
+                  
+                  # Sidebar
+                  div(
+                    class = "col-md-3",
+                    div(
+                      class = "card shadow-sm mb-4",
+                      div(
+                        class = "card-body",
+                        h5(class = "card-title", "SEC Form Controls"),
+                        
+                        selectInput(
+                          "filingType",
+                          "Select Filing Type:",
+                          choices = c("10-Q" = "10-q", "10-K" = "10-k", "20-F" = "20-f"),
+                          selected = "10-k"
+                        ),
+                        selectInput(
+                          "filingDate",
+                          "Select Filing Date:",
+                          choices = NULL
+                        ),
+                      hr(),
+                      h6("AI Assistant"),
+                      textAreaInput(
+                        "i_oai10k",
+                        "Ask the AI assistant:",
+                        rows = 3,
+                        value = "Summarise material information.",
+                        placeholder = "Summarise the notes to the financial statements."
+                      ),
+                      actionButton('oaiBtn10k', 'Submit', class = "btn btn-primary mt-2", disabled = TRUE),
+                      hr(),
+                      h6("Chat History"),
+                      uiOutput("chtHst10k") %>% shinycssloaders::withSpinner(type = 5, color = "#0dc5c1", size = 0.5)
+                      )
+                      )
+                  ), 
+                  
+                  # Main content
+                  div(
+                    class = "col-md-9",
+                    div(
+                      class = "card shadow-sm",
+                      div(
+                        class = "card-body",
+                        h5(class = "card-title", "Form 10-K/10-Q/20-F"),
+                        div(
+                          style = "max-height: 600px; overflow-y: auto; padding: 15px;",
+                        uiOutput('trnscrpt10k') %>% shinycssloaders::withSpinner(type = 5, color = "#0dc5c1", size = 0.5)
+                        )
+                        )
+                    )
+                  )
+                )
+      ),
+      #### Sales Breakdown ----
+      
+      nav_panel("Sales Breakdown",
+                div(
+                  class = "row",
+                # Main content
+                div(
+                  class = "col-md-6",
+                  div(
+                    class = "card shadow-sm",
+                    div(
+                      class = "card-body",
+                      h5(class = "card-title", "Revenue Breakdown - Product"),
+                      plotlyOutput('revenue-product', height = "650px")
+                    )
+                  )
+                ),
+                div(
+                  class = "col-md-6",
+                  div(
+                    class = "card shadow-sm",
+                    div(
+                      class = "card-body",
+                      h5(class = "card-title", "Revenue Breakdown - Geography"),
+                      plotlyOutput('revenue-geo', height = "650px")
+                    )
+                  )
+                )
+                )
+            )
   )
+)
 ),
 
 # #### tab screener -----
@@ -945,6 +1105,10 @@ tabPanel(
 
 #### shiny server ----
 server <- function(input, output, session) {
+  
+  
+  
+
 
   con <- RSQLite::dbConnect(RSQLite::SQLite(), "datadb.db")
   
@@ -1068,7 +1232,7 @@ server <- function(input, output, session) {
     # start <- Sys.time()
     # mins_ <- result %>% group_by(IndicatorName) %>% summarise(mn_ = min(value))
     # result <- result %>% left_join(mins_, by = "IndicatorName")
-    # print(Sys.time() - start)
+    # # print(Sys.time() - start)
     
     
     # # faster Time difference of 0.002198935 secs
@@ -1077,7 +1241,7 @@ server <- function(input, output, session) {
       group_by(IndicatorName) %>%
       mutate(mn_ = min(value) * .95) %>%
       ungroup()
-    # print(Sys.time() - start)
+    # # print(Sys.time() - start)
     
     
     last_run_date <- lubridate::ymd(max(result$date_added))
@@ -1115,7 +1279,7 @@ server <- function(input, output, session) {
         )
       )
     
-    # print(paste("Econ: ", as.character(Sys.time() - start)))
+    # # print(paste("Econ: ", as.character(Sys.time() - start)))
     
     return(ggplotly(p) %>% style(hoverinfo = "none", traces = seq(1, 9, 1) )%>%
              config(
@@ -1168,7 +1332,7 @@ server <- function(input, output, session) {
         )
       )
 
-    # print(paste("Markets: ", as.character(Sys.time() - start)))
+    # # print(paste("Markets: ", as.character(Sys.time() - start)))
 
     ggplotly(
       d_ %>% ggplot() +
@@ -1228,7 +1392,7 @@ server <- function(input, output, session) {
     }
     
     
-    # print(paste("Commodities: ", as.character(Sys.time() - start)))
+    # # print(paste("Commodities: ", as.character(Sys.time() - start)))
     ggplotly(
       result %>% ggplot() +
         # geom_area(aes(x = date, y = close), alpha = 0.05, fill = '#56CC9D') +
@@ -1287,7 +1451,7 @@ server <- function(input, output, session) {
     #     text = d_$text[i]
     #   )
     # })
-    # print(Sys.time() - start)
+    # # print(Sys.time() - start)
     
     
     
@@ -1307,7 +1471,7 @@ server <- function(input, output, session) {
         text = text
       )
     }, d_subset$symbol, d_subset$date, d_subset$title, d_subset$text)
-    # print(Sys.time() - start)
+    # # print(Sys.time() - start)
 
     return(result)
   })
@@ -1349,7 +1513,7 @@ server <- function(input, output, session) {
           )
     }, d_subset$publishedDate, d_subset$title, d_subset$image, d_subset$site, d_subset$text, d_subset$url)
     
-    # print(Sys.time() - start)
+    # # print(Sys.time() - start)
     
     return(result)
     
@@ -1461,10 +1625,15 @@ server <- function(input, output, session) {
     }
     
     updateActionButton(session, 'oaiBtn', disabled = FALSE)
+    updateActionButton(session, 'oaiBtn10k', disabled = FALSE)
     
     output$chtHst <- renderUI({
         return(HTML("<p></p>"))
         })
+    
+    output$chtHst10k <- renderUI({
+      return(HTML("<p></p>"))
+    })
     
     #### data ----
     # the queried symbol
@@ -1477,7 +1646,7 @@ server <- function(input, output, session) {
     # start <- Sys.time()
     # dt_1 <- fmpc_price_history(symbols = input$mstrSmbl, startDate = "2005-01-01", endDate = Sys.Date()) %>%
     #   select(symbol, date, close) %>% mutate(close = round(close , 2))
-    # print(Sys.time() - start)
+    # # print(Sys.time() - start)
 
     
     
@@ -1497,21 +1666,27 @@ server <- function(input, output, session) {
   
     # faster Time difference of 0.365654 secs
     # a large data set, enforce parsimony from endpoint directly
-    # start <- Sys.time()
+    start <- Sys.time()
     dt_1 <- as.data.frame(general.APIcall(endpoint = "Price", symbol = input$mstrSmbl, start="2005-01-01"))
     names(dt_1) <- c('symbol', 'date', 'close')
     dt_1 <- dt_1 %>% mutate(close = as.numeric(close), date = lubridate::ymd(date)) %>% arrange(date)
-    # print(Sys.time() - start)
+    print(paste('Price:',Sys.time() - start))
     
     # print(dt_1)
+    start <- Sys.time()
     
-    dt_2 <- fmpc_financial_bs_is_cf(symbols = input$mstrSmbl, statement = 'income', quarterly = FALSE, limit = 25)
-    dt_3 <- fmpc_financial_bs_is_cf(symbols = input$mstrSmbl, statement = 'balance', quarterly = FALSE, limit = 25)
-    dt_4 <- fmpc_financial_bs_is_cf(symbols = input$mstrSmbl, statement = 'cashflow', quarterly = FALSE, limit = 25)
+    dt_2 <- fmpc_financial_bs_is_cf(symbols = input$mstrSmbl, statement = 'income', quarterly = FALSE, limit = 25) #%>%
+      #select(symbol, calendarYear, fillingDate, date, reportedCurrency, revenue, operatingIncome, researchAndDevelopmentExpenses, sellingGeneralAndAdministrativeExpenses, interestExpense, interestIncome, netIncome, weightedAverageShsOutDil, epsdiluted)
+    dt_3 <- fmpc_financial_bs_is_cf(symbols = input$mstrSmbl, statement = 'balance', quarterly = FALSE, limit = 25) #%>%
+      #select(symbol, calendarYear, fillingDate, date, reportedCurrency, totalStockholdersEquity, goodwill, intangibleAssets, totalAssets, totalLiabilities, totalCurrentLiabilities, cashAndCashEquivalents, totalDebt)
+    dt_4 <- fmpc_financial_bs_is_cf(symbols = input$mstrSmbl, statement = 'cashflow', quarterly = FALSE, limit = 25) #%>%
+      #select(symbol, calendarYear, fillingDate, date, reportedCurrency, freeCashFlow, dividendsPaid, capitalExpenditure, purchasesOfInvestments, salesMaturitiesOfInvestments, commonStockRepurchased, commonStockIssued, debtRepayment, otherFinancingActivites, acquisitionsNet,     netIncome, inventory, depreciationAndAmortization)
     
+    print(paste('BS IS CF:', Sys.time() - start))
     
+    start <- Sys.time()
     # handle conversion for foreign stocks
-    if (1) {
+    if (dt_0$currency[1] != "USD") {
       # 
       # # not fast Time difference of 1.75295 secs
       # start <- Sys.time()
@@ -1547,9 +1722,9 @@ server <- function(input, output, session) {
       # dt_3 <- convert.c(dt_3, fxs)
       # dt_4 <- convert.c(dt_4, fxs)
       # 
-      # print(Sys.time() - start)
+      # # print(Sys.time() - start)
       
-
+      
       # faster Time difference of 1.252749 secs
       # start <- Sys.time()
       # Create currency pairs
@@ -1568,10 +1743,10 @@ server <- function(input, output, session) {
       dt_2 <- converted_dts[[1]]
       dt_3 <- converted_dts[[2]]
       dt_4 <- converted_dts[[3]]
-
-      # print(Sys.time() - start)
+      
+      # # print(Sys.time() - start)
     }
-    
+    # print(paste('FX:', Sys.time() - start))
     
     
     
@@ -1585,6 +1760,7 @@ server <- function(input, output, session) {
     #   mutate(calendarYear = as.integer(calendarYear))
     
     # faster
+    start <- Sys.time()
     f_dt <- dt_2 %>% 
       inner_join(dt_3, by = c('symbol', 'calendarYear')) %>% 
       inner_join(select(dt_4, -netIncome, -inventory, -depreciationAndAmortization),
@@ -1595,89 +1771,147 @@ server <- function(input, output, session) {
       mutate(fillingDate = as.Date(fillingDate),
              calendarYear = as.integer(calendarYear))
     
+    print(paste('Joining:', Sys.time() - start))
+    
+    start <- Sys.time()
+    
+    # # not fast
+    # f_dt <- f_dt %>%
+    #   mutate(
+    #     netInvestments = abs(purchasesOfInvestments) - abs(salesMaturitiesOfInvestments),
+    #     netRepurchases = abs(commonStockRepurchased) - abs(commonStockIssued),
+    #     netDebtRepayment = abs(debtRepayment) - abs(otherFinancingActivites),
+    #     bookValue = totalStockholdersEquity - goodwill - intangibleAssets
+    #   ) %>%
+    #   mutate(across(
+    #     c(
+    #       'acquisitionsNet',
+    #       'capitalExpenditure',
+    #       'commonStockRepurchased',
+    #       'dividendsPaid',
+    #       'interestExpense'
+    #     ),
+    #     ~ abs(.x)
+    #   )) %>%
+    #   mutate(
+    #     fcfps = case_when(
+    #       weightedAverageShsOutDil == 0 ~ 0,
+    #       TRUE ~ freeCashFlow / weightedAverageShsOutDil
+    #     ),
+    # 
+    #     divps = case_when(
+    #       weightedAverageShsOutDil == 0 ~ 0,
+    #       TRUE ~ dividendsPaid / weightedAverageShsOutDil
+    #     ),
+    # 
+    #     bookps = case_when(
+    #       weightedAverageShsOutDil == 0 ~ 0,
+    #       TRUE ~ (totalStockholdersEquity - goodwill) / weightedAverageShsOutDil
+    #     ),
+    # 
+    #     netdebtps = case_when(
+    #       weightedAverageShsOutDil == 0 ~ 0,
+    #       TRUE ~ (totalDebt - cashAndCashEquivalents) / weightedAverageShsOutDil
+    #     ),
+    # 
+    #     operatingps = case_when(
+    #       weightedAverageShsOutDil == 0 ~ 0,
+    #       TRUE ~ operatingIncome / weightedAverageShsOutDil
+    #     ),
+    # 
+    #     revenueps = case_when(
+    #       weightedAverageShsOutDil == 0 ~ 0,
+    #       TRUE ~ revenue / weightedAverageShsOutDil
+    #     ),
+    # 
+    #     debt = case_when(totalAssets == 0 ~ 0, TRUE ~ totalLiabilities / totalAssets),
+    # 
+    #     RD = case_when(revenue == 0 ~ 0, TRUE ~ researchAndDevelopmentExpenses / revenue),
+    # 
+    #     SA = case_when(
+    #       revenue == 0 ~ 0,
+    #       TRUE ~ sellingGeneralAndAdministrativeExpenses / revenue
+    #     ),
+    # 
+    #     operatingMargin = case_when(revenue == 0 ~ 0, TRUE ~ operatingIncome / revenue),
+    # 
+    #     ROE = case_when(
+    #       (totalStockholdersEquity - goodwill) == 0 ~ 0,
+    #       TRUE ~ operatingIncome / (totalStockholdersEquity - goodwill)
+    #     ),
+    # 
+    #     ROIC = case_when(
+    #       (totalAssets - totalCurrentLiabilities - cashAndCashEquivalents) == 0 ~ 0,
+    #       TRUE ~ operatingIncome / (totalAssets - totalCurrentLiabilities - cashAndCashEquivalents)
+    #     ),
+    # 
+    #     CAPEX = case_when(revenue == 0 ~ 0, TRUE ~ capitalExpenditure / revenue),
+    # 
+    #     netRepurchasesRevenue = case_when(
+    #       revenue == 0 ~ 0,
+    #       TRUE ~ (commonStockRepurchased - commonStockIssued) / revenue
+    #     ),
+    # 
+    #     divtoOpInc = case_when(operatingIncome == 0 ~ 0, TRUE ~ dividendsPaid / operatingIncome),
+    # 
+    #     netInterestExptoOpInc = case_when(
+    #       operatingIncome == 0 ~ 0,
+    #       TRUE ~ (interestIncome - interestExpense) / operatingIncome
+    #     )
+    #   )
+    # 
+    # # print(paste('Data load:', Sys.time() - start))
+    
+    
+    # faster
+    start <- Sys.time()
     f_dt <- f_dt %>%
       mutate(
         netInvestments = abs(purchasesOfInvestments) - abs(salesMaturitiesOfInvestments),
         netRepurchases = abs(commonStockRepurchased) - abs(commonStockIssued),
         netDebtRepayment = abs(debtRepayment) - abs(otherFinancingActivites),
-        bookValue = totalStockholdersEquity - goodwill - intangibleAssets
+        bookValue = totalStockholdersEquity - goodwill - intangibleAssets,
+        
+        across(c('acquisitionsNet', 'capitalExpenditure', 'commonStockRepurchased', 'dividendsPaid', 'interestExpense'), abs),
+        
+        inv_weightedAverageShsOutDil = ifelse(weightedAverageShsOutDil == 0, 0, 1 / weightedAverageShsOutDil),
+        inv_revenue = ifelse(revenue == 0, 0, 1 / revenue),
+        inv_operatingIncome = ifelse(operatingIncome == 0, 0, 1 / operatingIncome),
+        
+        fcfps = freeCashFlow * inv_weightedAverageShsOutDil,
+        divps = dividendsPaid * inv_weightedAverageShsOutDil,
+        bookps = (totalStockholdersEquity - goodwill) * inv_weightedAverageShsOutDil,
+        netdebtps = (totalDebt - cashAndCashEquivalents) * inv_weightedAverageShsOutDil,
+        operatingps = operatingIncome * inv_weightedAverageShsOutDil,
+        revenueps = revenue * inv_weightedAverageShsOutDil,
+        
+        debt = ifelse(totalAssets == 0, 0, totalLiabilities / totalAssets),
+        RD = researchAndDevelopmentExpenses * inv_revenue,
+        SA = sellingGeneralAndAdministrativeExpenses * inv_revenue,
+        operatingMargin = operatingIncome * inv_revenue,
+        ROE = ifelse(totalStockholdersEquity - goodwill == 0, 0, operatingIncome / (totalStockholdersEquity - goodwill)),
+        ROIC = ifelse(totalAssets - totalCurrentLiabilities - cashAndCashEquivalents == 0, 0,
+                      operatingIncome / (totalAssets - totalCurrentLiabilities - cashAndCashEquivalents)),
+        CAPEX = capitalExpenditure * inv_revenue,
+        netRepurchasesRevenue = (commonStockRepurchased - commonStockIssued) * inv_revenue,
+        divtoOpInc = dividendsPaid * inv_operatingIncome,
+        netInterestExptoOpInc = (interestIncome - interestExpense) * inv_operatingIncome
       ) %>%
-      mutate(across(
-        c(
-          'acquisitionsNet',
-          'capitalExpenditure',
-          'commonStockRepurchased',
-          'dividendsPaid',
-          'interestExpense'
-        ),
-        ~ abs(.x)
-      )) %>%
-      mutate(
-        fcfps = case_when(
-          weightedAverageShsOutDil == 0 ~ 0,
-          TRUE ~ freeCashFlow / weightedAverageShsOutDil
-        ),
-        
-        divps = case_when(
-          weightedAverageShsOutDil == 0 ~ 0,
-          TRUE ~ dividendsPaid / weightedAverageShsOutDil
-        ),
-        
-        bookps = case_when(
-          weightedAverageShsOutDil == 0 ~ 0,
-          TRUE ~ (totalStockholdersEquity - goodwill) / weightedAverageShsOutDil
-        ),
-        
-        netdebtps = case_when(
-          weightedAverageShsOutDil == 0 ~ 0,
-          TRUE ~ (totalDebt - cashAndCashEquivalents) / weightedAverageShsOutDil
-        ),
-        
-        operatingps = case_when(
-          weightedAverageShsOutDil == 0 ~ 0,
-          TRUE ~ operatingIncome / weightedAverageShsOutDil
-        ),
-        
-        revenueps = case_when(
-          weightedAverageShsOutDil == 0 ~ 0,
-          TRUE ~ revenue / weightedAverageShsOutDil
-        ),
-        
-        debt = case_when(totalAssets == 0 ~ 0, TRUE ~ totalLiabilities / totalAssets),
-        
-        RD = case_when(revenue == 0 ~ 0, TRUE ~ researchAndDevelopmentExpenses / revenue),
-        
-        SA = case_when(
-          revenue == 0 ~ 0,
-          TRUE ~ sellingGeneralAndAdministrativeExpenses / revenue
-        ),
-        
-        operatingMargin = case_when(revenue == 0 ~ 0, TRUE ~ operatingIncome / revenue),
-        
-        ROE = case_when(
-          (totalStockholdersEquity - goodwill) == 0 ~ 0,
-          TRUE ~ operatingIncome / (totalStockholdersEquity - goodwill)
-        ),
-        
-        ROIC = case_when(
-          (totalAssets - totalCurrentLiabilities - cashAndCashEquivalents) == 0 ~ 0,
-          TRUE ~ operatingIncome / (totalAssets - totalCurrentLiabilities - cashAndCashEquivalents)
-        ),
-        
-        CAPEX = case_when(revenue == 0 ~ 0, TRUE ~ capitalExpenditure / revenue),
-        
-        netRepurchasesRevenue = case_when(
-          revenue == 0 ~ 0,
-          TRUE ~ (commonStockRepurchased - commonStockIssued) / revenue
-        ),
-        
-        divtoOpInc = case_when(operatingIncome == 0 ~ 0, TRUE ~ dividendsPaid / operatingIncome),
-        
-        netInterestExptoOpInc = case_when(
-          operatingIncome == 0 ~ 0,
-          TRUE ~ (interestIncome - interestExpense) / operatingIncome
-        )
-      )
+      select(all_of(c(
+        'symbol', 'calendarYear', 'date', 'fillingDate', 'reportedCurrency',
+        'revenue', 'operatingIncome', 'netIncome', 'freeCashFlow', 'inventory',
+        'dividendsPaid', 'weightedAverageShsOutDil', 'propertyPlantEquipmentNet',
+        'cashAndCashEquivalents', 'totalAssets', 'interestExpense', 'totalLiabilities',
+        'retainedEarnings', 'debtRepayment', 'totalDebt', 'longTermDebt', 'sellingGeneralAndAdministrativeExpenses',
+        'capitalExpenditure', 'stockBasedCompensation', 'researchAndDevelopmentExpenses',
+        'fcfps', 'divps', 'bookps', 'operatingps', 'revenueps', 'debt', 'RD', 'SA', 'operatingMargin',
+        'ROE', 'ROIC', 'CAPEX', 'netRepurchasesRevenue', 'divtoOpInc', 'netInterestExptoOpInc',
+        'netInvestments', 'netRepurchases', 'netDebtRepayment', 'bookValue',
+        'epsdiluted', 'netdebtps'
+      )))
+    
+    print(paste('Transforms:', Sys.time() - start))
+    
     
     # dt_5 <- f_dt %>%
     #   pivot_longer(
@@ -1690,14 +1924,51 @@ server <- function(input, output, session) {
     
     
     
-    stkPrfl(dt_0)
-    stkPrc(dt_1)
+    # stkPrfl(dt_0)
+    # stkPrc(dt_1)
     stkFDta(f_dt)
     # stkFdmntlsLng(dt_5)
     stkInc(dt_2)
     stkBal(dt_3)
     stkCF(dt_4)
     
+    
+    # update the gauge with a default value
+    last_fcf <- as.numeric(dt_4[which.max(dt_4$calendarYear), 'freeCashFlow'])
+    # print(last_fcf)
+    # print(10^(nchar(as.character(abs(last_fcf))) - 1))
+    
+    updateNumericInput(session, "i_strtFv", value = round(last_fcf / value_fcf(last_fcf), 2), label = label_fcf(last_fcf))
+    
+    
+    stkPrfl(dt_0)
+    stkPrc(dt_1)
+    
+    
+    # observeEvent(input$navbar, {
+    #   # This will run whenever the active tab changes
+    #   session$sendCustomMessage("tabRendered", list(tabName = input$navbar))
+    # })
+    # 
+    # observeEvent(input$tabReady, {
+    #   # This will run once for each tab when it's first rendered
+    #   tabName <- input$tabReady
+    #   if (tabName == "General") {
+    #     # Code to run once Tab 2 has finished rendering
+    #     # print("Tab General has finished rendering")
+    #     # Add your specific code for Tab 2 here
+    #     
+    #     
+    #     
+    #     session$sendCustomMessage("tabRendered", list(reset = TRUE))
+    #     # print('tab General has been reset')
+    #     
+    #   }
+    # }, ignoreInit = TRUE)
+    
+    
+    
+    # for fundamentals
     stkFdmntlsLng <- reactive({
       isolate(stkFDta()) %>%pivot_longer(
         cols = where(is.numeric) &
@@ -1711,17 +1982,11 @@ server <- function(input, output, session) {
     
     
     
-    # update the gauge with a default value
-    last_fcf <- as.numeric(dt_4[which.max(dt_4$calendarYear), 'freeCashFlow'])
-    print(last_fcf)
-    print(10^(nchar(as.character(abs(last_fcf))) - 1))
+
+
+
     
-    updateNumericInput(session, "i_strtFv", value = last_fcf / value_fcf(last_fcf), label = label_fcf(last_fcf))
-    
-    
-    
-    
-    
+    # for model
     stkMdlRctv <- reactive({
       prc_ <- isolate(stkPrc())
       prc <- prc_ %>%
@@ -1747,6 +2012,7 @@ server <- function(input, output, session) {
         )) %>%
         mutate(Estimate = round(profit * multiple, 2))
     })
+    
     
     
     
@@ -1796,7 +2062,7 @@ server <- function(input, output, session) {
         )
       }, d_subset$publishedDate, d_subset$title, d_subset$image, d_subset$site, d_subset$text, d_subset$url)
       
-      # print(Sys.time() - start)
+      # # print(Sys.time() - start)
       
       return(result)
       
@@ -1833,7 +2099,7 @@ server <- function(input, output, session) {
           text = text
         )
       }, d_subset$symbol, d_subset$date, d_subset$title, d_subset$text)
-      # print(Sys.time() - start)
+      # # print(Sys.time() - start)
       
       return(result)
     })
@@ -1843,29 +2109,26 @@ server <- function(input, output, session) {
     output$fnnclSmmry <- renderText({
       
       start <- Sys.time()
-      mkap <- fmpc_security_mrktcap(i_mstrSmbl(), limit = 1)
-      avg.over <- 3
-      
-      # dt <- req(stkFDta()) %>% mutate(rn = row_number()) %>% filter(rn <= avg.over) %>%
-      #   group_by(symbol) %>% summarise(across(
-      #     c(
-      #       'freeCashFlow',
-      #       'operatingIncome',
-      #       'netIncome',
-      #       'bookValue',
-      #       'epsdiluted',
-      #       'researchAndDevelopmentExpenses',
-      #       'totalDebt'
-      #     ),
-      #     ~ mean(.x)
+      # mkap <- fmpc_security_mrktcap(i_mstrSmbl(), limit = 1)
+      # avg.over <- 3
+      # 
+      # dt <- isolate(stkFDta()) %>% 
+      #   slice_head(n = avg.over) %>%
+      #   group_by(symbol) %>% 
+      #   summarise(across(
+      #     c('freeCashFlow', 'operatingIncome', 'netIncome', 'bookValue', 'epsdiluted',
+      #       'researchAndDevelopmentExpenses', 'totalDebt'),
+      #     mean
       #   )) %>%
-      #   left_join(mkap, by = "symbol") %>% mutate(
+      #   left_join(select(mkap, symbol, marketCap), by = "symbol") %>% 
+      #   mutate(
       #     `P-FCF` = marketCap / freeCashFlow,
       #     PE = marketCap / netIncome,
       #     `P-Book` = marketCap / bookValue,
       #     EV = marketCap + totalDebt,
       #     `EV-FCF` = EV / freeCashFlow
-      #   ) %>% rename(
+      #   ) %>% 
+      #   rename(
       #     "Free Cash Flow" = freeCashFlow,
       #     "Operating Income" = operatingIncome,
       #     "Net Income" = netIncome,
@@ -1873,34 +2136,99 @@ server <- function(input, output, session) {
       #     "EPS (Diluted)" = epsdiluted,
       #     "R&D Expenses" = researchAndDevelopmentExpenses,
       #     "Total Debt" = totalDebt
-      #   )  %>% select(-symbol, -date) %>%
-      #   mutate(across(
-      #     where(is.numeric) & !contains('CalendarYear'), ~custom_number_format(.x, decimals = 2)
-      #   )) #%>% mutate(across(
-        #   where(is.numeric),
-        #   ~ scales::label_number(
-        #     scale_cut = scales::cut_short_scale(),
-        #     accuracy = 0.01
-        #   )(.x)
-        # ))
-      # print(dt)
+      #   ) %>% 
+      #   select(-symbol) %>%
+      #   mutate(across(where(is.numeric) & !contains('CalendarYear'), 
+      #                 ~custom_number_format(.x, decimals = 2)))
+      # 
+      # 
+      # 
+      # 
+      # t <- dt  %>% t(.) %>% kableExtra::kable() %>%
+      #   kableExtra::kable_styling(
+      #     bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+      #     full_width = TRUE,
+      #     position = "center"
+      #   ) %>%
+      #   kableExtra::column_spec(1, bold = TRUE) %>%
+      #   kableExtra::row_spec(0, bold = TRUE, color = "white") %>%
+      #   kableExtra::add_header_above(c("Financials" = 1, "3y Avg." = 1))
       
-      dt <- req(stkFDta()) %>% 
-        slice_head(n = avg.over) %>%
-        group_by(symbol) %>% 
+      mkap <- fmpc_security_mrktcap(i_mstrSmbl(), limit = 1)
+      
+      periods <- c(1, 3, 5, 7, 10)
+      data <- isolate(stkFDta())
+      # dt_list <- lapply(periods, function(avg.over) {
+      #   data %>% 
+      #     slice_head(n = avg.over) %>%
+      #     group_by(symbol) %>% 
+      #     summarise(across(
+      #       c('freeCashFlow', 'operatingIncome', 'netIncome', 'bookValue', 'epsdiluted',
+      #         'researchAndDevelopmentExpenses', 'totalDebt'),
+      #       mean
+      #     )) %>%
+      #     left_join(select(mkap, symbol, marketCap), by = "symbol") %>% 
+      #     mutate(
+      #       `P-FCF` = marketCap / freeCashFlow,
+      #       PE = marketCap / netIncome,
+      #       `P-Book` = marketCap / bookValue,
+      #       EV = marketCap + totalDebt,
+      #       `EV-FCF` = EV / freeCashFlow
+      #     ) %>% 
+      #     rename(
+      #       "Free Cash Flow" = freeCashFlow,
+      #       "Operating Income" = operatingIncome,
+      #       "Net Income" = netIncome,
+      #       "Book Value" = bookValue,
+      #       "EPS (Diluted)" = epsdiluted,
+      #       "R&D Expenses" = researchAndDevelopmentExpenses,
+      #       "Total Debt" = totalDebt
+      #     ) %>% 
+      #     select(-symbol) %>%
+      #     mutate(across(where(is.numeric) & !contains('CalendarYear'), 
+      #                   ~custom_number_format(.x, decimals = 2))) %>%
+      #     mutate(Period = paste0(avg.over, "y Avg."))
+      # })
+      # 
+      # # Combine all periods into one dataframe
+      # dt_combined <- bind_rows(dt_list)
+      # 
+      # # Create the table
+      # t <- dt_combined %>%
+      #   select(Period, everything()) %>%
+      #   pivot_longer(cols = -Period, names_to = "Metric", values_to = "Value") %>%
+      #   pivot_wider(names_from = Period, values_from = Value) %>%
+      #   kableExtra::kable() %>%
+      #   kableExtra::kable_styling(
+      #     bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+      #     full_width = TRUE,
+      #     position = "center"
+      #   ) %>%
+      #   kableExtra::column_spec(1, bold = TRUE) %>%
+      #   kableExtra::row_spec(0, bold = TRUE, color = "black") %>%
+      #   kableExtra::add_header_above(c("Financials" = 1, "Averages" = length(periods)))
+      
+      
+      dt_combined <- data %>%
+        group_by(symbol) %>%
+        mutate(row_number = row_number()) %>%
+        ungroup() %>%
+        crossing(period = periods) %>%
+        filter(row_number <= period) %>%
+        group_by(symbol, period) %>%
         summarise(across(
           c('freeCashFlow', 'operatingIncome', 'netIncome', 'bookValue', 'epsdiluted',
-            'researchAndDevelopmentExpenses', 'totalDebt'),
-          mean
-        )) %>%
-        left_join(select(mkap, symbol, marketCap), by = "symbol") %>% 
+            'researchAndDevelopmentExpenses', 'totalDebt', 'sellingGeneralAndAdministrativeExpenses'),
+          ~ mean(.x, na.rm = TRUE)
+        ), .groups = "drop") %>%
+        # left_join(select(mkap, symbol, marketCap), by = "symbol") %>%
         mutate(
-          `P-FCF` = marketCap / freeCashFlow,
-          PE = marketCap / netIncome,
-          `P-Book` = marketCap / bookValue,
-          EV = marketCap + totalDebt,
+          `P-FCF` = mkap$marketCap[1] / freeCashFlow,
+          PE = mkap$marketCap[1] / netIncome,
+          `P-Book` = mkap$marketCap[1] / bookValue,
+          EV = mkap$marketCap[1] + totalDebt,
           `EV-FCF` = EV / freeCashFlow
-        ) %>% 
+        ) %>%
         rename(
           "Free Cash Flow" = freeCashFlow,
           "Operating Income" = operatingIncome,
@@ -1908,40 +2236,39 @@ server <- function(input, output, session) {
           "Book Value" = bookValue,
           "EPS (Diluted)" = epsdiluted,
           "R&D Expenses" = researchAndDevelopmentExpenses,
+          "SG&A Expenses" = sellingGeneralAndAdministrativeExpenses,
           "Total Debt" = totalDebt
-        ) %>% 
+        ) %>%
         select(-symbol) %>%
-        mutate(across(where(is.numeric) & !contains('CalendarYear'), 
-                      ~custom_number_format(.x, decimals = 2)))
+        mutate(across(where(is.numeric) & !contains('CalendarYear') & !matches("period"),
+                      ~ custom_number_format(.x, decimals = 2))) %>%
+        mutate(Period = paste0(period, "y Avg.")) %>%
+        select(-period)
       
-      
-      
-      
-      t <- dt  %>% t(.) %>% kableExtra::kable() %>%
+      # Create the table
+      t <- dt_combined %>%
+        select(Period, everything()) %>%
+        pivot_longer(cols = -Period, names_to = "Metric", values_to = "Value") %>%
+        pivot_wider(names_from = Period, values_from = Value) %>%
+        add_row(Metric = "Market Cap", `1y Avg.` = custom_number_format(mkap$marketCap[1], decimals = 2)) %>%
+        kableExtra::kable() %>%
         kableExtra::kable_styling(
           bootstrap_options = c("striped", "hover", "condensed", "responsive"),
           full_width = TRUE,
           position = "center"
         ) %>%
         kableExtra::column_spec(1, bold = TRUE) %>%
-        kableExtra::row_spec(0, bold = TRUE, color = "white") %>%
-        kableExtra::add_header_above(c("Financials" = 1, "3y Avg." = 1))
-   
-      # t <- datatable(
-      #   dt %>% select(-symbol, -date) %>% t(.),
-      #   filter = "top",
-      #   options = list(
-      #     pageLength = 10,
-      #     autoWidth = TRUE,
-      #     scrollX = TRUE,
-      #     dom = 'Bfrtip'
-      #     #buttons = c('copy', 'csv', 'excel')
-      #   ),
-      #   extensions = 'Buttons',
-      #   class = 'cell-border stripe hover'
-      # )
+        kableExtra::row_spec(0, bold = TRUE) %>%
+        kableExtra::add_header_above(c("Financials" = 1, "Averages" = length(periods)))
+
       
-      print(paste("General - table: ", as.character(Sys.time() - start)))
+      # alternatively return data table but it's not faster
+      # t <- dt_combined %>%
+      #     select(Period, everything()) %>%
+      #     pivot_longer(cols = -Period, names_to = "Metric", values_to = "Value") %>%
+      #     pivot_wider(names_from = Period, values_from = Value)
+      
+      print(paste("Summary table: ", as.character(Sys.time() - start)))
     
       
       
@@ -1971,7 +2298,7 @@ server <- function(input, output, session) {
         kableExtra::row_spec(0, bold = TRUE, color = "white") %>% # background = "#4E79A7") %>%
         kableExtra::add_header_above(c("General" = 1, " " = 1))
       
-      print(paste("trivia: ", as.character(Sys.time() - start)))
+      # print(paste("trivia: ", as.character(Sys.time() - start)))
       
       return(t)
     })
@@ -1983,7 +2310,7 @@ server <- function(input, output, session) {
       t <- tagList(#tags$h2("Description"), 
               tags$p(req(stkPrfl()) %>% pull(description)))
       
-      print(paste("Desc: ", as.character(Sys.time() - start)))
+      # print(paste("Desc: ", as.character(Sys.time() - start)))
       return(t)
     })
     
@@ -2064,7 +2391,7 @@ server <- function(input, output, session) {
       #     buttonwidth = 80
       #   )
       # )
-      print(paste("menus: ", as.character(Sys.time() - start)))
+      # print(paste("menus: ", as.character(Sys.time() - start)))
       
       
       start <- Sys.time()
@@ -2106,7 +2433,7 @@ server <- function(input, output, session) {
       d_ <- d_ %>% left_join(i_tr, by = "calendarYear") %>% group_by(calendarYear) %>% mutate(y_ = last(close)) %>% ungroup()
       min_ = min(d_$close) * .95
       
-      print(paste("Insider: ", as.character(Sys.time() - start)))
+      # print(paste("Insider: ", as.character(Sys.time() - start)))
       
       start <- Sys.time()
       
@@ -2127,7 +2454,9 @@ server <- function(input, output, session) {
               x = calendarYear,
               y = y_,
               text = paste(
-                "Insider Trading",
+                'Date:', date,
+                "\nClose:", close,
+                "\nInsider Trading",
                 "\nbuySellRatio: ",
                 as.character(round(buySellRatio, 2)),
                 "\npurchases: ",
@@ -2152,10 +2481,16 @@ server <- function(input, output, session) {
           ) +
           #scale_y_continuous(labels = scales::label_number_auto()) +
           labs(x = '', y = '') +
-          theme_minimal()
-        # tooltip = c('text')
+          theme_minimal(),
+        
+        tooltip = "text"
       ) %>% layout(updatemenus = updatemenus)  %>% 
-        style(hoverinfo = "none", traces = 1)
+        style(hoverinfo = "none", traces = 1) %>% config(
+          modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut')
+          # displaylogo = FALSE
+        ) %>% layout(
+          dragmode = FALSE
+        )
                    #              title = list(
                    #   text = "Price History",
                    #   y = 0.95,  # y position (0 to 1)
@@ -2165,12 +2500,63 @@ server <- function(input, output, session) {
                    #   font = list(size = 25)
                    # )) %>% style(hoverinfo = "none", traces = 1) %>% config(modeBarButtonsToRemove = c('zoom', 'select')) %>% layout(dragmode = FALSE)
                    
-         print(paste("Plot: ", as.character(Sys.time() - start)))
+         # print(paste("Plot: ", as.character(Sys.time() - start)))
                    
          return(p)
     })
     
 
+    
+    #### Analyst Estimates ----
+    
+    output$anlstEstmts <- renderPlotly({
+      
+      estmts <- general.APIcall(endpoint = "Analysts", symbol = i_mstrSmbl()) %>% 
+        mutate(date = lubridate::ymd(date)) %>%
+        rename(
+          "Buy Ratings" = analystRatingsbuy,
+          "Hold Ratings" = analystRatingsHold,
+          "Sell Ratings" = analystRatingsSell,
+          "Strong Sell Ratings" = analystRatingsStrongSell,
+          "Strong Buy Ratings" = analystRatingsStrongBuy
+        )
+      
+      to_pivot <- c("Buy Ratings",
+                    "Hold Ratings",
+                    "Sell Ratings",
+                    "Strong Sell Ratings",
+                    "Strong Buy Ratings")
+      
+      estmts <- tidyr::pivot_longer(estmts, cols = to_pivot, names_to = 'Guidance', values_to = 'Votes')
+      
+      colors_n <- length(unique(estmts$Guidance))
+      custom_palette <- colorRampPalette(c('#56CC9D', '#FF7851'))
+      
+      p <- estmts %>%
+        ggplot() +
+        geom_bar(aes(x = date, y = Votes, fill = Guidance, text = paste(Guidance, ':', Votes)), position = 'stack', stat = 'identity') +
+        scale_y_continuous(labels = scales::number_format()) +
+        scale_fill_manual(values = custom_palette(colors_n)) + 
+        labs(y = "Ratings", x = "", fill = "Guidance") +
+        theme_minimal()
+      
+      return(
+        ggplotly(p, tooltip = 'text') %>%
+          layout(legend = list(orientation = "h", 
+                               y = -0.2,
+                               x = 0.5,
+                               xanchor = "center")) %>%
+          config(
+            modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
+            displaylogo = FALSE  # This removes the Plotly logo, which is often desired
+          ) %>% layout(
+            dragmode = FALSE)
+      )
+      
+      
+    })
+    
+    
     
     
     
@@ -2179,33 +2565,72 @@ server <- function(input, output, session) {
     #### fundamentals chart ----
     
     output$stkFndmt <- renderPlotly({
-      d_ <- isolate(stkFdmntlsLng())
-      p <- d_ %>%
-        filter(
-          between(calendarYear, input$fndmtlsSldr[1], input$fndmtlsSldr[2])
-        ) %>%
-        filter(Legend %in% input$fndmtlsMtrics) %>%
-        ggplot() +
-        geom_line(aes(
-          x = fillingDate, y = Value, col = Legend
-        ), linewidth = 1) +
-        geom_point(
-          aes(x = fillingDate, y = Value, col = Legend, 
-              text = paste(Legend, ": ",scales::comma(round(Value/1e6, 2)), "M")),
-          size = 1,
-          show.legend = FALSE
-        ) +
-        scale_x_date(date_breaks = "2 years", 
-                     date_labels = "%y") +
-        scale_y_continuous(
-          n.breaks = 10,
-          trans = ifelse(input$fndmtlsLg, 'log', 'identity'),
-          labels = scales::label_number(scale_cut = scales::cut_short_scale())
-        ) +
-        labs(x = '', y = '', title = 'Fundamentals Chart') +
-        theme_minimal()
       
-      ggplotly(p, tooltip = "text") %>% 
+        d_ <- isolate(stkFdmntlsLng())
+        
+      # p <- d_ %>%
+      #   filter(
+      #     between(calendarYear, input$fndmtlsSldr[1], input$fndmtlsSldr[2])
+      #   ) %>%
+      #   filter(Legend %in% input$fndmtlsMtrics) %>%
+      #   ggplot() +
+      #   geom_line(aes(
+      #     x = fillingDate, y = Value, col = Legend
+      #   ), linewidth = 1) +
+      #   geom_point(
+      #     aes(x = fillingDate, y = Value, col = Legend, 
+      #         text = paste(Legend, ": ",scales::comma(round(Value/1e6, 2)), "M")),
+      #     size = 1,
+      #     show.legend = FALSE
+      #   ) +
+      #   scale_x_date(date_breaks = "2 years", 
+      #                date_labels = "%y") +
+      #   scale_y_continuous(
+      #     n.breaks = 10,
+      #     trans = ifelse(input$fndmtlsLg, 'log', 'identity'),
+      #     labels = scales::label_number(scale_cut = scales::cut_short_scale())
+      #   ) +
+      #   labs(x = '', y = '', title = 'Fundamentals Chart') +
+      #   theme_minimal()
+        
+        colors_n <- length(unique(input$fndmtlsMtrics))
+        custom_palette <- colorRampPalette(c('#56CC9D', '#FF7851'))
+      
+        p <- d_ %>%
+          filter(
+            between(calendarYear, input$fndmtlsSldr[1], input$fndmtlsSldr[2])
+          ) %>%
+          filter(Legend %in% input$fndmtlsMtrics) %>%
+          {
+            if(input$fndmtlsLg) {
+              filter(., Value > 0)
+            } else {
+              .
+            }
+          } %>%
+          ggplot() +
+          geom_line(aes(
+            x = fillingDate, y = Value, col = Legend
+          ), linewidth = 1) +
+          geom_point(
+            aes(x = fillingDate, y = Value, col = Legend, 
+                text = paste(Legend, ": ", scales::comma(round(Value/1e6, 2)), "M")),
+            size = 1,
+            show.legend = FALSE
+          ) +
+          scale_x_date(date_breaks = "2 years", 
+                       date_labels = "%y") +
+          scale_y_continuous(
+            #n.breaks = 7,
+            trans = if(input$fndmtlsLg) scales::pseudo_log_trans(base = exp(1)) else "identity",
+            labels = scales::label_number(scale_cut = scales::cut_short_scale())
+          ) +
+          scale_color_manual(values = custom_palette(colors_n)) +
+          labs(x = '', y = '', title = 'Fundamentals Chart') +
+          theme_minimal()
+      
+      
+      ggplotly(p, tooltip = c("text")) %>% 
         layout(legend = list(orientation = 'h')) %>% 
         config(
           modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
@@ -2214,8 +2639,8 @@ server <- function(input, output, session) {
         layout(
           dragmode = FALSE
         ) %>% 
-        style(hoverinfo = "text", traces = 2) %>% 
-        style(hoverinfo = "none", traces = 1)
+        style(hoverinfo = "text", traces = 1) # %>%
+        # style(hoverinfo = "none", traces = 1)
       
     })
     
@@ -2226,7 +2651,7 @@ server <- function(input, output, session) {
     output$stkFndmntlsRltv <- renderPlot({
       app_dir <- shiny::getShinyOption("appDir")
       path.root <- paste0(app_dir, '/src_tables/') #file.path()
-      # print(path.root)
+      # # print(path.root)
       kw = input$sctr
       keyword <- unlist(strsplit(kw, ' '))
       len.kw <- length(keyword)
@@ -2259,7 +2684,7 @@ server <- function(input, output, session) {
           input$fndmtlsSldr[2]
         ))
       
-      smry <- req(stkFdmntlsLng()) %>% filter(
+      smry <- isolate(stkFdmntlsLng()) %>% filter(
         Legend %in% c(
           'fillingDate',
           'debt',
@@ -2403,16 +2828,16 @@ server <- function(input, output, session) {
     
     output$stkMdl <- renderPlotly({
       
-      d_e <- stkMdlRctv()
+      d_e <- stkMdlRctv() %>% mutate(min_ = min(close) * .95)
       # 
-      # print(input$i_trgtFrct)
+      # # print(input$i_trgtFrct)
       # end <- as.integer(format(input$i_trgtFrct, "%Y")) - 2024
       
       xx <- data.frame(date = lubridate::ymd(input$i_trgtFrct))
       
       p <- d_e %>%
         ggplot() +
-        geom_ribbon(aes(x = date, ymin = min(d_e$close) * .95, ymax = close), alpha = 0.15) +
+        geom_ribbon(aes(x = date, ymin = min_, ymax = close), alpha = 0.15) +
         # geom_area(aes(x = date, y = close), alpha = 0.15) +
         geom_line(aes(x = date, y = close)) +
         geom_point(aes(x = fillingDate, y = Estimate),
@@ -2582,14 +3007,14 @@ server <- function(input, output, session) {
       
       
       mx_cy <- max(d_fd$calendarYear, na.rm = T)
-      # print(mx_cy)
+      # # print(mx_cy)
       cy_y <- as.integer(format(Sys.Date(), "%Y"))
       yrs <- d_fd$calendarYear
       
-      # print(cy_y)
-      # print(yrs)
+      # # print(cy_y)
+      # # print(yrs)
       # 
-      # print(!(cy_y %in% yrs))
+      # # print(!(cy_y %in% yrs))
       
       if (!(cy_y %in% yrs)) {
         d_fd2 <- bind_rows(d_fd, 
@@ -2740,15 +3165,15 @@ server <- function(input, output, session) {
       
       rescaling_factor = value_fcf(last_fcf)
       
-      # print(rescaling_factor)
+      # # print(rescaling_factor)
       
       cash_flows <- (input$i_strtFv * rescaling_factor) * ((1+input$i_grwthRt/100) ^ seq(1, input$i_fvHrzn))
       pv <- sum(cash_flows / (1 + input$i_dscntRt/100)^(1:input$i_fvHrzn))
       tv <- (cash_flows[length(cash_flows)] * input$i_extMltpl) / (1 + input$i_dscntRt/100)^input$i_fvHrzn
       # 
-      # print(cash_flows)
-      # print(pv)
-      # print(tv)
+      # # print(cash_flows)
+      # # print(pv)
+      # # print(tv)
       
       fv <- pv + tv
       fvpshr <- fv / shares_outst
@@ -2765,7 +3190,7 @@ server <- function(input, output, session) {
       min_range <- min(fvpshr * 0.7)
       
       steps <- seq(min_range, top_range, length.out = 6)
-      # print(steps)
+      # # print(steps)
       
       
       # Define colors and labels
@@ -2838,19 +3263,19 @@ server <- function(input, output, session) {
       
       # # spline model implied CAGR
       # projection <- model_projection()[[1]] %>% mutate(x = lubridate::as_date(x))
-      # print(projection)
+      # # print(projection)
       # 
       # min_yr <-  lubridate::year(min(projection %>% pull(x)))
-      # print(min_yr)
+      # # print(min_yr)
       # end_projection <- as.numeric(projection[which.max(projection$x), "y"])
       # start_projection <- as.numeric(projection[which.min(projection$x), "y"])
-      # print(start_projection)
-      # print(end_projection)
+      # # print(start_projection)
+      # # print(end_projection)
       # cagr <- round(((end_projection / start_projection)^( 1 / (lubridate::year(input$i_trgtFrct) - min_yr)) - 1) * 100, 2)
       
       
-      # print('----')
-      # print(input$i_stkVltnSldr[1])
+      # # print('----')
+      # # print(input$i_stkVltnSldr[1])
       
       period_start <- as.integer(format(as.Date(input$i_stkVltnSldr[1]), "%Y"))
       period_end <- as.integer(format(as.Date(input$i_stkVltnSldr[2]), "%Y"))
@@ -2878,10 +3303,10 @@ server <- function(input, output, session) {
       # Round growth rate to 2 decimal places
       cagr <- round(growth_rate, 2)
       
-      # print(min_year)
-      # print(max_year)
-      # print(start_pred)
-      # print(end_pred)
+      # # print(min_year)
+      # # print(max_year)
+      # # print(start_pred)
+      # # print(end_pred)
       
       #return html
       return(paste("Earnings Trend Implied CAGR (%):", cagr))
@@ -2962,9 +3387,13 @@ server <- function(input, output, session) {
     #### capital allocation ----
     
     output$cptlAllctn <- renderPlotly({
-      d <- req(stkFdmntlsLng())  %>%
+      d <- isolate(stkFdmntlsLng())  %>%
         filter(between(calendarYear, input$cptlAllctnSldr[1], input$cptlAllctnSldr[2])) %>%
         filter(Legend %in% input$cptlAllctnMtrics)
+      
+      
+      colors_n <- length(unique(d$Legend))
+      custom_palette <- colorRampPalette(c('#56CC9D', '#FF7851'))
       
       ggplotly(
         d %>%
@@ -2994,9 +3423,10 @@ server <- function(input, output, session) {
             n.breaks = 7,
             labels = scales::label_number(scale_cut = scales::cut_short_scale())
           ) +
+          scale_fill_manual(values = custom_palette(colors_n)) +
           labs(title = "Capital Allocation Chart") +
           theme_minimal(),
-        tooltip = "text"
+        tooltip = c("x", "text")
       ) %>% 
         layout(legend = list(orientation = 'h')) %>% 
         style(hoverinfo = "text") %>% 
@@ -3038,13 +3468,13 @@ server <- function(input, output, session) {
     
     
     # kk <- reactiveVal(0)
-    #### transcript ----
+    #### Transcript ----
     
     output$trnscrpt <- renderUI({
     
       tx_d <- trnscrpt_()
       if (is.null(tx_d)) {
-        return(tags$p("Transcript not available for this quarter"))
+        return(tags$p("Transcript not available for this quarter."))
       }
       
       output <- ""
@@ -3061,13 +3491,350 @@ server <- function(input, output, session) {
     })
     
     
+    # i_filingType<- reactiveVal(input$filingType)
+    
+    #### Form 10-K ----
+    
+    
+    filing_info <- reactive({
+      # print(i_filingType())
+      
+      f <- general.APIcall(endpoint = "10k-sec", symbol = i_mstrSmbl(), form = input$filingType) 
+      
+      if (length(f) != 0) {
+        f <- f %>% filter(grepl('.htm', finalLink)) %>% mutate(fillingDate = substr(fillingDate, 1, 10))
+      }
+      # print(f)
+      return(f)
+    })
+    
+    observe({
+      filing_info <- filing_info()
+      
+      if (length(filing_info) != 0) {
+        
+      updateSelectInput(session,
+                        "filingDate",
+                        choices = filing_info$fillingDate,
+                        selected = filing_info$fillingDate[1])
+      }
+    })
+    
+    sec_content <- reactive({
+      filing_info <- filing_info()
+      # print(filing_info)
+      if (length(filing_info) != 0) {
+      user_agent <- "Alex D draghicialex96@gmail.com"
+      tryCatch({
+      url_ <- filing_info[filing_info$fillingDate == input$filingDate, 'finalLink']
+      # print(url_)
+      sec_f <- httr::GET(url = url_, 
+                         config = httr::user_agent(user_agent))
+      httr::content(sec_f, "text")
+      }, error = function(e) {
+        NULL
+      }
+      )
+      
+      }
+    })
+    
+    
+    
+    output$trnscrpt10k <- renderUI({
+      content_ <- sec_content()
+      if (!is.null(content_)) {
+      HTML(sec_content())
+      }
+      else {
+        HTML("<p> Form not available </p>")
+      }
+      
+      # # print(input$trnscrptYr10k)
+      # # print(input$trnscrptQrtr10k)
+      
+      # form_k <- general.APIcall(endpoint = "10k", symbol = i_mstrSmbl(), start = input$trnscrptYr10k, quarter = input$trnscrptQrtr10k)
+      # 
+      #  if (is.null(form_k)) {
+      #   return(tags$p("Form not available for this period."))
+      # }
+      # 
+      # names_ <- c("Equity Method Investments", "Leases", "Other Current Liabilities",
+      #             "Revenue", "Share-Based Compensation", "Income Taxes",
+      #             "Commitments and Contingencies", "Business Segments", "Related Party Transactions",
+      #             "Revenue Recognition", "Financial Instruments", "Debt",
+      #             "Shareholders' Equity", "Benefit Plans", "Property and Equipment",
+      #             "Goodwill and Other Intangibles", "Long-Term Debt", "Fair Value Measurements",
+      #             "Segment Information", "Accrued Liabilities", "Employee Retirement Plans",
+      #             "Business Combinations", "Share Repurchase Program", "Operations",
+      #             "Group information", "Significant accounting policies", "Short-term investments",
+      #             "Trade accounts receivable", "Recoverable taxes", "Income taxes",
+      #             "Property and equipment", "Intangible assets", "Accounts payable to clients",
+      #             "Trade accounts payable", "Taxes payable", "Provision for contingencies",
+      #             "Equity", "Earnings (loss) per share", "Total revenue and income",
+      #             "Expenses by nature", "Employee benefits", "Share-based payment",
+      #             "Financial instruments", "Other disclosures on cash flows", "Business combinations",
+      #             "Segment information", "Subsequent events", "Goodwill",
+      #             "Other intangible assets", "Accrued liabilities", "Fair value measurements",
+      #             "Investments", "Stock-based compensation", "Net income per common share",
+      #             "Employee benefit plans", "Share repurchase program", "Subsequent event",
+      #             "OPERATING SEGMENTS", "INTEREST REVENUE AND EXPENSE", "PRINCIPAL TRANSACTIONS",
+      #             "INCENTIVE PLANS", "RETIREMENT BENEFITS", "INCOME TAXES",
+      #             "EARNINGS PER SHARE", "INVESTMENTS", "LOANS",
+      #             "ALLOWANCE FOR CREDIT LOSSES", "GOODWILL AND INTANGIBLE ASSETS", "DEBT",
+      #             "REGULATORY CAPITAL", "PREFERRED STOCK", "DERIVATIVES",
+      #             "CONCENTRATIONS OF CREDIT RISK", "FAIR VALUE MEASUREMENT", "FAIR VALUE ELECTIONS",
+      #             "CONTINGENCIES", "ACCOUNTING POLICIES", "OTHER INCOME (EXPENSE), NET",
+      #             "PROPERTY AND EQUIPMENT", "BUSINESS COMBINATIONS", "GOODWILL",
+      #             "INTANGIBLE ASSETS", "UNEARNED REVENUE", "LEASES",
+      #             "STOCKHOLDERS' EQUITY", "Earnings per Share", "Equity Investments",
+      #             "Goodwill and Intangible Assets", "Liabilities", "Stockholders' Equity",
+      #             "Interest and Other Income, Net", "Revenues", "Variable Interest Entities",
+      #             "Acquisitions", "Contingencies", "Net Income Per Share",
+      #             "Compensation Plans", "Income tax expenses", "Share-based awards",
+      #             "Fair value measurement", "Property and equipment, net", "Intangible assets, net",
+      #             "Related party transactions", "Restricted net assets", "Commitments",
+      #             "Risks and contingencies", "Debt and Financing Arrangements", "Stock-Based Compensation",
+      #             "Employee Benefits", "Covid-19", "Description of the Business",
+      #             "Property, Plant and Equipment", "Intangible Assets", "Employee Benefit Plans",
+      #             "Subsequent Events", "General", "Leases and Other Commitments",
+      #             "Derivative Instruments", "Basic and Diluted Shares", "Reportable Operating Segments",
+      #             "Concentration of Business", "Inventories", "Accrued Expenses",
+      #             "Business Acquisitions", "New Accounting Guidance", "Property and Equipment, Net",
+      #             "Net Income (Loss) Per Share", "Non-Controlling Interests", "Divestitures",
+      #             "Significant Accounting Policies", "Discontinued Operations", "Receivables and Allowances",
+      #             "Other Accrued Liabilities", "Other Non-Current Liabilities", "Retirement Benefits",
+      #             "Capital Stock", "Earnings Per Share", "Guarantees",
+      #             "Restructuring Costs", "Business Divestiture", "Revolving Line of Credit",
+      #             "Senior Notes", "Accelerated Share Repurchase", "Subsequent Event")
+      # 
+      # output_list <- lapply(names_, function(rep) {
+      #   content <- tryCatch({
+      #     form_k[[rep]][[rep]][[4]]
+      #   }, error = function(e) {
+      #     paste("Error accessing content for", rep)
+      #   })
+      #   
+      #   if (is.null(content) || length(content) == 0) {
+      #     return(tags$div(
+      #       tags$h3(rep),
+      #       tags$p("No content found for this section.")
+      #     ))
+      #   }
+      #   
+      #   formatted_content <- sapply(strsplit(content, "\n")[[1]], function(line) {
+      #     if (grepl(": ", line)) {
+      #       paste0("<p style='margin-left: 20px;'>", htmltools::htmlEscape(line), "</p>")
+      #     } else {
+      #       paste0("<p>", htmltools::htmlEscape(line), "</p>")
+      #     }
+      #   })
+      #   
+      #   tags$div(
+      #     tags$h3(rep),
+      #     HTML(paste(formatted_content, collapse = ""))
+      #   )
+      # })
+      # 
+      # tagList(output_list)
+      
+      # library(stringr)
+      # library(htmltools)
+      # format_content <- function(content) {
+      #   # Split content by new lines
+      #   lines <- strsplit(content, "\n")[[1]]
+      #   
+      #   # Replace multiple spaces with a single line break
+      #   formatted_lines <- sapply(lines, function(line) {
+      #     if (nchar(trimws(line)) == 0) {
+      #       return("<br>")  # Return a line break for empty lines
+      #     } else {
+      #       # Replace multiple spaces with a single space and escape HTML
+      #       return(paste0("<p>", htmltools::htmlEscape(gsub("\\s{2,}", " ", trimws(line))), "</p>"))
+      #     }
+      #   })
+      #   
+      #   return(HTML(paste(formatted_lines, collapse = "")))
+      #   
+      # }
+      # 
+      # output_list <- lapply(names_, function(rep) {
+      #   content <- tryCatch({
+      #     form_k[[rep]][[rep]][[4]]
+      #   }, error = function(e) {
+      #     paste("Error accessing content for", rep)
+      #   })
+      #   
+      #   if (is.null(content) || length(content) == 0) {
+      #     return(tags$div(
+      #       tags$h5(rep),
+      #       tags$p("No content found for this section.")
+      #     ))
+      #   }
+      #   
+      #   tags$div(
+      #     tags$h3(rep),
+      #     format_content(content)
+      #   )
+      # })
+      # 
+      # tagList(output_list)
+      
+    })
+      
+      
+    
+    # # to identify json objects with text to show !!!! don't delete
+    # 
+    # symbols <- c('CVI', 'AAPL', 'BLD', 'STNE', 'ULTA', 'C', 'MSFT', 'AAPL', 'META', 'GOOG', 'BABA', 'SAIA', 'BLDR', 'DECK', 'JBL', 'UBER', 'HUBB', 'FICO')
+    # 
+    # unique_ <- c()
+    # 
+    # for (symbol in symbols) {
+    #   x <- general.APIcall(endpoint = "10k", symbol = symbol, start = "2021", quarter = "FY")
+    #   
+    #   l <- numeric(length(names(x)))
+    #   names(l) <- names(x)
+    #   
+    #   for (i in names(x)) {
+    #     l[i] <- tryCatch({
+    #       a <- x[[i]][[i]][[4]]
+    #       if (!is.null(a) && is.character(a) && nchar(a) > 200) 1 else 0
+    #     }, error = function(e) {
+    #       0  # Return 0 in case of any error
+    #     })
+    #   }
+    #   
+    #   new_names <- names(x)[l == 1]
+    #   unique_ <- unique(c(unique_, new_names))
+    # }
+    # 
+    # unique_
+    
+    
+    #### Sales Breakdown - Product ----
+    
+    output$`revenue-product` <- renderPlotly({
+      
+      product <- as.data.frame(general.APIcall(endpoint = "revenue-product", symbol = i_mstrSmbl()))
+      result <- data.frame(Date = character(),
+                           Value = numeric(),
+                           Segment = character(),
+                           stringsAsFactors = FALSE)
+      
+      cols <- colnames(product)
+      for (date in cols){
+      # print(product[[date]] %>% na.omit(.))
+      row <- product[[date]] %>% na.omit(.)
+      
+      if (length(row) > 0) {
+        temp_df <- data.frame(
+          Date = rep(date, length(row)),
+          Value = as.numeric(row),
+          Segment = names(row),
+          stringsAsFactors = FALSE
+        )
+        result <- rbind(result, temp_df)
+      }
+      
+      }
+      
+      result <- result %>% mutate(Date = lubridate::ymd(Date))
+      
+      colors_n <- length(unique(result$Segment))
+      custom_palette <- colorRampPalette(c('#56CC9D', '#FF7851'))
+      
+      # print(result)
+      
+      
+      p <- result %>%
+        ggplot() +
+        geom_bar(aes(x = Date, y = Value, fill = Segment, text = paste(Segment, ": ", scales::comma(round(Value/1e6, 2)), "M")), position = 'stack', stat = 'identity') +
+        scale_y_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+        scale_fill_manual(values = custom_palette(colors_n)) +
+        labs(y = "$", x = "", fill = "Categories") +
+        theme_minimal()
+      
+      return(
+        ggplotly(p, tooltip = c("x", "text")) %>%
+          layout(legend = list(orientation = "h", 
+                               y = -0.2,
+                               x = 0.5,
+                               xanchor = "center")) %>%
+          config(
+            modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
+            displaylogo = FALSE
+          ) %>% layout(
+            dragmode = FALSE)
+      )
+      
+    })
+    
+    # Sales Breakdown - Geography ----
+    
+    output$`revenue-geo` <- renderPlotly({
+      
+      product <- as.data.frame(general.APIcall(endpoint = "revenue-geo", symbol = i_mstrSmbl()))
+      result <- data.frame(Date = character(),
+                           Value = numeric(),
+                           Segment = character(),
+                           stringsAsFactors = FALSE)
+      
+      cols <- colnames(product)
+      for (date in cols){
+        # print(product[[date]] %>% na.omit(.))
+        row <- product[[date]] %>% na.omit(.)
+        
+        if (length(row) > 0) {
+          temp_df <- data.frame(
+            Date = rep(date, length(row)),
+            Value = as.numeric(row),
+            Segment = names(row),
+            stringsAsFactors = FALSE
+          )
+          result <- rbind(result, temp_df)
+        }
+        
+      }
+      
+      result <- result %>% mutate(Date = lubridate::ymd(Date))
+      
+      colors_n <- length(unique(result$Segment))
+      custom_palette <- colorRampPalette(c('#56CC9D', '#FF7851'))
+      
+      # print(result)
+      
+      
+      p <- result %>%
+        ggplot() +
+        geom_bar(aes(x = Date, y = Value, fill = Segment, text = paste(Segment, ": ", scales::comma(round(Value/1e6, 2)), "M")), position = 'stack', stat = 'identity') +
+        scale_y_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+        scale_fill_manual(values = custom_palette(colors_n)) +
+        labs(y = "$", x = "", fill = "Categories") +
+        theme_minimal()
+      
+      return(
+        ggplotly(p, tooltip = c("x", "text")) %>%
+          layout(legend = list(orientation = "h", 
+                               y = -0.2,
+                               x = 0.5,
+                               xanchor = "center")) %>%
+          config(
+            modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
+            displaylogo = FALSE 
+          ) %>% layout(
+            dragmode = FALSE)
+      )
+      
+    })
+    
     
     
     #### gradient ----
     
     output$stkRtChng <- renderPlotly({
       ggplotly(
-        req(stkFdmntlsLng()) %>%
+        isolate(stkFdmntlsLng()) %>%
           filter(
             between(calendarYear, input$fndmtlsSldr[1], input$fndmtlsSldr[2])
           ) %>%
@@ -3126,7 +3893,73 @@ server <- function(input, output, session) {
   
   #### AI summary ----
   
+  
+  
+  generate_AI_output <- function(input, output, id_in, id_out, prompt_in) {
+    # output[[id_out]] <- renderUI({
+      
+      # limit question size
+      if (nchar(input[[id_in]]) > 500) {
+        updateTextAreaInput(session, "i_oai", value = "The question is too long.")
+        return()
+      }
+      
+      q_ <- list(list(role = "user", content = input[[id_in]]))
+      prompt <- list(list(
+        role = "system",
+        content = prompt_in
+      ))
+      
+      msgs <- c(prompt, q_)
+      
+      completion <- openai::create_chat_completion(
+        
+        model = "gpt-4o-mini",
+        messages = msgs,
+        max_tokens = 800,
+        temperature = 0.4
+      )
+      
+      resp_ <- list(list(role = "assistant", content = completion$choices$message.content)) 
+      updateTextAreaInput(session, "i_oai", value = "")
+      
+      msgs <- c(msgs, resp_)
+      output[[id_out]] <- renderUI({
+        # # print(msgs)
+        return(HTML(paste(sapply(msgs[-1], function(msg) {
+          paste0(toupper(msg$role), ": ", msg$content, "<br> <br>")
+        }), collapse = "")))
+      })
+      
+    # })
+  }
+  
+  
   observeEvent(input$oaiBtn, {
+    
+    output$chtHst <- renderUI({
+      return(div())
+    })
+    
+    prompt_in <- paste0(
+      "You are an expert financial analyst specializing in interpreting investor transcripts and addressing the user's questions. Analyze the following excerpt from",
+      stkPrfl() %>% pull(companyName),
+      " Q",
+      as.character(input$trnscrptQrtr),
+      " ",
+      as.character(input$trnscrptYr),
+      " earnings call transcript, focusing on key financial metrics, management's outlook, and any significant strategic changes. Respond to the query by providing a structured response such as an executive summary, main points using bullet points, justified by key figures, and historical parallels, if relevant. Consider current market conditions and the company's position in its industry when providing your analysis.",
+      " Format response in HTML for R Shiny renderUI (for example, for bold, use a div with appropriate style parameter), don't reflect this fact in the response. Avoid wrapping in ``` quotes. Always end with a finished sentence. This is the transcript: ",
+      # substr(
+      trnscrpt_() %>% pull(content)
+      # , 1, 5000)
+    )
+      
+    generate_AI_output(input, output, id_in = 'i_oai', id_out = 'chtHst', prompt_in = prompt_in)
+    
+    
+    # old code
+    {
     # dbExecute(con, "CREATE TABLE IF NOT EXISTS IP_user (
     #       IP TEXT,
     #       COUNT_ NUMERIC(10,0),
@@ -3134,102 +3967,88 @@ server <- function(input, output, session) {
     #   )")
     # 
     # tables <- dbListTables(con)
-    # print(paste("Tables in the database:", paste(tables, collapse = ", ")))
-    
-    if (nchar(input$i_oai) > 500) {
-      updateTextAreaInput(session, "i_oai", value = "The question is too long.")
-      return()
-    }
-    
-    # ip <- session$clientData$url_hostname
-    # dt <- format(Sys.Date(), "%Y-%m-%d")
-    # 
-    # user_e <- if (nrow(dbGetQuery(con, "SELECT IP FROM IP_user WHERE IP = ? and DATE_ = ? AND IP != '127.0.0.1'", params = list(ip, dt))) > 0) {1} else {0}
-    # 
-    # 
-    # # if user exists, see usage for today
-    # if (user_e) {
-    # result <- dbGetQuery(con, "SELECT COUNT_ FROM IP_user WHERE IP = ? and DATE_ = ?", params = list(ip, dt)) %>% pull(COUNT_)
-    # } else {
-    #   result <- 0
-    # }
-    # 
-    # 
-    # if (result > 7) {
-    #   output$chtHst <- renderUI({
-    #   return(HTML("<p> Token limit exceeded. </p>"))
-    #   })
-    # }
-    # 
-    # # if less than 7 queries, run AI
-    # else {
-    
-    # newk <- kk() + 1
-    # kk(newk)
-    # 
-    # ip <- session$clientData$url_hostname
-    # k <- newk
-    # dt <- format(Sys.Date(), "%Y-%m-%d")
-    # 
-    # # update usage or add user
-    # 
-    # if (user_e) {dbExecute(con, "UPDATE IP_user SET COUNT_ = ? WHERE IP = ? AND DATE_ = ?", params = list(k, ip, dt))} 
-    # else {
-    #   dbExecute(con, "INSERT INTO IP_user (IP, COUNT_, DATE_) VALUES (?, ?, ?)", params = list(ip, k, dt))
-    # }
+    # # print(paste("Tables in the database:", paste(tables, collapse = ", ")))
     
     
-    q_ <- list(list(role = "user", content = input$i_oai))
     
-    prompt <- list(list(
-      role = "system",
-      content = paste0(
-        "You are an expert financial analyst specializing in interpreting investor transcripts and addressing the user's questions. Analyze the following excerpt from",
-        stkPrfl() %>% pull(companyName),
-        " Q",
-        as.character(input$trnscrptQrtr),
-        " ",
-        as.character(input$trnscrptYr),
-        " earnings call transcript, focusing on key financial metrics, management's outlook, and any significant strategic changes. Respond to the query by providing a structured response such as an executive summary, main points using bullet points, justified by key figures, and historical parallels, if relevant. Consider current market conditions and the company's position in its industry when providing your analysis.",
-        " Format response in HTML for R Shiny renderUI (for example, for bold, use a div with appropriate style parameter), don't reflect this fact in the response. Avoid wrapping in ``` quotes. Always end with a finished sentence. This is the transcript: ",
-        # substr(
-        trnscrpt_() %>% pull(content)
-        # , 1, 5000)
-      )
-    ))
     
-    msgs <- c(prompt, q_)
     
-    # completion <- openai::create_chat_completion(
-    #   
-    #   model = "gpt-4o-mini",
-    #   messages = msgs,
-    #   max_tokens = 700,
-    #   temperature = 0.3
+    # paste0(
+    #   "You are an expert financial analyst specializing in interpreting investor transcripts and addressing the user's questions. Analyze the following excerpt from",
+    #   stkPrfl() %>% pull(companyName),
+    #   " Q",
+    #   as.character(input$trnscrptQrtr),
+    #   " ",
+    #   as.character(input$trnscrptYr),
+    #   " earnings call transcript, focusing on key financial metrics, management's outlook, and any significant strategic changes. Respond to the query by providing a structured response such as an executive summary, main points using bullet points, justified by key figures, and historical parallels, if relevant. Consider current market conditions and the company's position in its industry when providing your analysis.",
+    #   " Format response in HTML for R Shiny renderUI (for example, for bold, use a div with appropriate style parameter), don't reflect this fact in the response. Avoid wrapping in ``` quotes. Always end with a finished sentence. This is the transcript: ",
+    #   # substr(
+    #   trnscrpt_() %>% pull(content)
+    #   # , 1, 5000)
     # )
-    httr::set_config(httr::config(timeout = 600))
+    
+    
+    
+    
+    
+    # # limit question size
+    # if (nchar(input$i_oai) > 500) {
+    #   updateTextAreaInput(session, "i_oai", value = "The question is too long.")
+    #   return()
+    # }
+    # 
+    
+    
+    # q_ <- list(list(role = "user", content = input$i_oai))
+    
+    # prompt <- list(list(
+    #   role = "system",
+    #   content = paste0(
+    #     "You are an expert financial analyst specializing in interpreting investor transcripts and addressing the user's questions. Analyze the following excerpt from",
+    #     stkPrfl() %>% pull(companyName),
+    #     " Q",
+    #     as.character(input$trnscrptQrtr),
+    #     " ",
+    #     as.character(input$trnscrptYr),
+    #     " earnings call transcript, focusing on key financial metrics, management's outlook, and any significant strategic changes. Respond to the query by providing a structured response such as an executive summary, main points using bullet points, justified by key figures, and historical parallels, if relevant. Consider current market conditions and the company's position in its industry when providing your analysis.",
+    #     " Format response in HTML for R Shiny renderUI (for example, for bold, use a div with appropriate style parameter), don't reflect this fact in the response. Avoid wrapping in ``` quotes. Always end with a finished sentence. This is the transcript: ",
+    #     # substr(
+    #     trnscrpt_() %>% pull(content)
+    #     # , 1, 5000)
+    #   )
+    # ))
+    # 
+    # msgs <- c(prompt, q_)
+    
+    # httr::set_config(httr::config(timeout = 600))
 
-        completion <- openai::create_chat_completion(
-          
-          model = "gpt-4o-mini",
-          messages = msgs,
-          max_tokens = 800,
-          temperature = 0.4
-        )
+        # completion <- openai::create_chat_completion(
+        #   
+        #   model = "gpt-4o-mini",
+        #   messages = msgs,
+        #   max_tokens = 800,
+        #   temperature = 0.4
+        # )
 
     
-    resp_ <- list(list(role = "assistant", content = completion$choices$message.content)) 
-    updateTextAreaInput(session, "i_oai", value = "")
+    # resp_ <- list(list(role = "assistant", content = completion$choices$message.content)) 
+    # updateTextAreaInput(session, "i_oai", value = "")
     
-    msgs <- c(msgs, resp_)
-    output$chtHst <- renderUI({
-      # print(msgs)
-      return(HTML(paste(sapply(msgs[-1], function(msg) {
-        paste0(toupper(msg$role), ": ", msg$content, "<br> <br>")
-      }), collapse = "")))
-    })
+    # msgs <- c(msgs, resp_)
+    # output$chtHst <- renderUI({
+    #   # # print(msgs)
+    #   return(HTML(paste(sapply(msgs[-1], function(msg) {
+    #     paste0(toupper(msg$role), ": ", msg$content, "<br> <br>")
+    #   }), collapse = "")))
+    # })
     
     #  }
+      
+    }
+    
+  })
+  
+  observeEvent(input$oaiBtn10k, {
     
   })
   
@@ -3281,8 +4100,8 @@ server <- function(input, output, session) {
    # # d_s_ <- dta_d_ %>% filter(mktCap > 1 * 10 ^ 9) %>% distinct(symbol, q_20, q_5) %>% group_by(q_5) %>% slice_sample(n = input$i_screenerToPlot) %>% pull(symbol)
    #  
    #  
-   #  print(dta_d_)
-   #  print(d_)
+   #  # print(dta_d_)
+   #  # print(d_)
    #  
    #  
    #  preff <- d_ %>% slice_max(order_by = d__, n = input$i_screenerToPlot) %>% pull(symbol)

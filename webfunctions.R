@@ -99,7 +99,7 @@ general.APIcall <- function(endpoint, columns = NULL, symbol = NULL, start = NUL
 }
 
 # 
-# res <- httr::GET("https://financialmodelingprep.com/api/v3/sec_filings/AAPL?type=10-k&page=0
+# res <- 
 # raw.content <- httr::content(res, as = 'raw')
 # content_json <- base::rawToChar(raw.content)
 # content_df <- jsonlite::fromJSON(content_json)
@@ -327,7 +327,7 @@ value_fcf <- function(last_fcf) {
   return(multiple)
 }
 
-# user_agent <- "
+# user_agent <-
 # sec_f <- httr::GET(url = 'https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm', config = httr::user_agent(user_agent))
 # content_ <- httr::content(sec_f, 'text')
 # content_

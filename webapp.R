@@ -549,7 +549,7 @@ ui <- fluidPage(
               div(
                 class = "card-body",
                 h5(class = "card-title", "Stock Model"),
-                plotlyOutput('stkMdl', height = "650px") %>% shinycssloaders::withSpinner(type = 5, color = "#0dc5c1", size = 0.5)
+                plotOutput('stkMdl', height = "650px") %>% shinycssloaders::withSpinner(type = 5, color = "#0dc5c1", size = 0.5)
               )
             ),
             div(
@@ -635,7 +635,7 @@ ui <- fluidPage(
               div(
                 class = "card-body",
                 h5(class = "card-title", "Valuation Chart"),
-                plotlyOutput('vltn', height = "1500px") %>% shinycssloaders::withSpinner(type = 5, color = "#0dc5c1", size = 0.5)
+                plotOutput('vltn', height = "1500px") %>% shinycssloaders::withSpinner(type = 5, color = "#0dc5c1", size = 0.5)
               )
             )
           )
@@ -1095,15 +1095,21 @@ server <- function(input, output, session) {
   #     CREATE TABLE IF NOT EXISTS availab_symbols (
   #         symbol	VARCHAR(10),
   #         name VARCHAR(100),
-  #         name_f VARCHAR(500) 
+  #         name_f VARCHAR(500)
   #                    )")
   # 
   # RSQLite::dbWriteTable(con,
   #              "availab_symbols",
   #              autosuggest_,
   #              overwrite = TRUE)
-  
-  
+
+  # autosuggest_ <- fmpc_symbols_available() %>% filter(type == "stock" ) #%>% filter(exchangeShortName %in% c("NYSE", "NASDAQ", "JPX", "LSE", "HKSE", "ASX", "SHH", "SHZ", "XETRA", "EURONEXT", "PNK", "OTC", "BSE")) %>% select(symbol, name)
+  # #
+  # autosuggest_ <- autosuggest_ %>% group_by(exchangeShortName) %>% summarise(n = n()) %>% arrange(desc(n))
+  # 
+  # autosuggest_['name'][is.na(autosuggest_['name'])] <- ""
+  # 
+  # write.csv(autosuggest_ %>% mutate(name_f = paste0(name, " (", symbol, ")")), 'availab_symbols.csv', row.names = F)
   
   autosuggest_ <- RSQLite::dbGetQuery(con, "SELECT * FROM availab_symbols")
   autosuggest_ <- setNames(autosuggest_$symbol, autosuggest_$name_f)
@@ -1118,6 +1124,10 @@ server <- function(input, output, session) {
     server = TRUE,
     options = list(maxOptions = 15)
   )
+  
+  
+  
+  
   
   i_mstrSmbl <- reactiveVal(NULL)
   
@@ -2843,7 +2853,7 @@ server <- function(input, output, session) {
     
     model_projection <- reactiveVal(NULL)
     
-    output$stkMdl <- renderPlotly({
+    output$stkMdl <- renderPlot({
       
       d_e <- stkMdlRctv() %>% mutate(min_ = min(close) * .95)
       # 
@@ -2864,7 +2874,8 @@ server <- function(input, output, session) {
         geom_line(aes(x = date, y = close)) +
         geom_point(aes(x = fillingDate, y = Estimate),
                    colour = '#FF7851',
-                   shape = 3) +
+                   shape = 18,
+                   size = 2) +
         
         geom_smooth(
           aes(x = fillingDate, y = Estimate, text = ''),
@@ -2873,7 +2884,8 @@ server <- function(input, output, session) {
           formula = y ~ splines::ns(x, input$i_mdlSplns),
           se = F,
           fullrange = TRUE,
-          linetype = 'dashed'
+          linetype = 'dashed',
+          linewidth = 1.5
         ) +
         geom_smooth(
           aes(x = fillingDate, y = Estimate, text = ''),
@@ -2881,7 +2893,8 @@ server <- function(input, output, session) {
           alpha = 0.5,
           method = 'lm',
           se = F,
-          fullrange = TRUE
+          fullrange = TRUE,
+          linewidth = 1.5
         ) +
         geom_text(
           data = xx,
@@ -2924,7 +2937,12 @@ server <- function(input, output, session) {
           '—',
           "Annual"
         )) +
-        theme_minimal()
+        theme_minimal() +
+        theme(
+          axis.text = element_text(face = "bold", size = 10),
+          plot.title = element_text(face = "bold", size = 15)
+          # panel.spacing.y = unit(0, "lines")
+        )
       
       # b_ <- ggplot_build(p)
       # b_lm_ns_ <- data.frame(b_$data[[4]]) %>% select(x,y)
@@ -2938,18 +2956,18 @@ server <- function(input, output, session) {
       #   return(p)
       #   
       # })
-      
-      pp <- ggplotly(
-        p
-      ) %>% style(hoverinfo = "text") %>% style(hoverinfo = "none", traces = c(1, 4, 5, 6, 7)) %>% style(hovertemplate = "Estimate: %{y:.2f}", traces = c(4,5)) %>%
-        config(
-          modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
-          displaylogo = FALSE  # This removes the Plotly logo
-        ) %>% layout(
-          dragmode = FALSE
-        )
-      
-      return(pp)
+      # 
+      # pp <- ggplotly(
+      #   p
+      # ) %>% style(hoverinfo = "text") %>% style(hoverinfo = "none", traces = c(1, 4, 5, 6, 7)) %>% style(hovertemplate = "Estimate: %{y:.2f}", traces = c(4,5)) %>%
+      #   config(
+      #     modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
+      #     displaylogo = FALSE  # This removes the Plotly logo
+      #   ) %>% layout(
+      #     dragmode = FALSE
+      #   )
+      # 
+      return(p)
     })
     
     
@@ -3020,7 +3038,7 @@ server <- function(input, output, session) {
     
     #### valuation ----
     
-    output$vltn <- renderPlotly({
+    output$vltn <- renderPlot({
       
       d_fd <- req(stkFDta()) %>% filter(symbol == i_mstrSmbl()) %>%
         select(symbol, calendarYear, fillingDate, epsdiluted, fcfps, divps, bookps, netdebtps, operatingps, revenueps) %>%
@@ -3121,41 +3139,44 @@ server <- function(input, output, session) {
       # 
       # write.csv(vltn_d, 'valuation_test2.csv')
       
-      
-      ggplotly(
-        vltn_d %>% filter(Legend %in% input$i_vltnSldr) %>% ggplot() +
-          geom_line(aes(x = date, y = Value), colour = '#56CC9D', linetype = 'dashed', alpha = 0.5) +
-          geom_line(aes(x = date, y = Trend), colour = '#FF7851') +
-          # geom_line(aes(x = date, y = Smooth), alpha = 0.5) +
-          scale_x_date(date_breaks = '2 years',
-                       date_labels = '%y',
-                       name = '') +
-          scale_y_continuous(
-            # n.breaks = 10,
-            trans = ifelse(input$i_vltnLg == 1, 'log', 'identity'),
-            labels = scales::number_format(),
-            name = ''
-          ) +
-          facet_wrap(vars(Legend), ncol = 1, scales = 'free_y') +
-          # facet_grid(rows = vars(Legend), cols = vars(2), scales = 'free_y') +
-          labs(title = paste0('Valuation Chart — ', as.character(input$i_vltnMvngAvg), '-year Moving Avg.'),
-               # subtitle = paste("Moving Average —", as.character(input$i_vltnMvngAvg))
-          ) +
-          theme_minimal() +
-          theme(
-            axis.text = element_text(face = "bold", size = 10),
-            plot.title = element_text(face = "bold", size = 15),
-            strip.text = element_text(face = "bold", size = 10),
-            panel.spacing.x = unit(-0.65, "cm")
-            # panel.spacing.y = unit(0, "lines")
-          )
-      ) %>% 
-        config(
-          modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
-          displaylogo = FALSE  # This removes the Plotly logo, which is often desired
-        ) %>% layout(
-          dragmode = FALSE
+      p <- vltn_d %>% filter(Legend %in% input$i_vltnSldr) %>% ggplot() +
+        geom_line(aes(x = date, y = Value), colour = '#56CC9D', linetype = 'dashed', alpha = 0.5) +
+        geom_line(aes(x = date, y = Trend), colour = '#FF7851') +
+        # geom_line(aes(x = date, y = Smooth), alpha = 0.5) +
+        scale_x_date(date_breaks = '2 years',
+                     date_labels = '%y',
+                     name = '') +
+        scale_y_continuous(
+          n.breaks = 10,
+          trans = ifelse(input$i_vltnLg == 1, 'log', 'identity'),
+          labels = scales::number_format(),
+          name = ''
+        ) +
+        facet_wrap(vars(Legend), ncol = 1, scales = 'free_y') +
+        # facet_grid(rows = vars(Legend), cols = vars(2), scales = 'free_y') +
+        labs(title = paste0('Valuation Chart — ', as.character(input$i_vltnMvngAvg), '-year Moving Avg.'),
+             # subtitle = paste("Moving Average —", as.character(input$i_vltnMvngAvg))
+        ) +
+        theme_minimal() +
+        theme(
+          axis.text = element_text(face = "bold", size = 10),
+          plot.title = element_text(face = "bold", size = 15),
+          strip.text = element_text(face = "bold", size = 10),
+          panel.spacing.x = unit(-0.65, "cm")
+          # panel.spacing.y = unit(0, "lines")
         )
+      
+      # ggplotly(
+      #   p
+      # ) %>% 
+      #   config(
+      #     modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
+      #     displaylogo = FALSE  # This removes the Plotly logo, which is often desired
+      #   ) %>% layout(
+      #     dragmode = FALSE
+      #   )
+      
+      return(p)
       
     })
     

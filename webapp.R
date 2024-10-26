@@ -2200,8 +2200,7 @@ output$stkPrs <- renderUI({
 
 
 
-#### SUMMARY AVERAGES ----
-
+#### AVERAGES ----
 output$fnnclSmmry <- renderText({
   
   start <- Sys.time()

@@ -134,7 +134,7 @@ create_news_container <- function(symbol, type = "News", date = NA, title = NA, 
            style = "display: flex; justify-content: space-between; margin-bottom: 10px;",
 
            strong(site, style = "font-size: 16px; color: #1a5f7a;"),
-           span(format(as.POSIXct(publishedDate), "%b %d, %y %H:%M"), style = "color: #666;")
+           span(format(as.POSIXct(publishedDate), "%b %d, %y"), style = "color: #666;")
          ),
 
          h5(title, style = "margin-top: 0; margin-bottom: 10px; color: #333;"),
@@ -167,7 +167,7 @@ create_news_container <- function(symbol, type = "News", date = NA, title = NA, 
       style = "display: flex; justify-content: space-between; margin-bottom: 10px;",
       
       strong(symbol, style = "font-size: 18px; color: #1a5f7a;"),
-      span(format(as.POSIXct(date), "%b %d, %y %H:%M"), style = "color: #666;")
+      span(format(as.POSIXct(date), "%b %d, %y"), style = "color: #666;")
     ),
     
     h5(title, style = "margin-top: 0; margin-bottom: 10px; color: #333;"),
@@ -263,16 +263,42 @@ dcf_valuation <- function(cash_flows, growth_rate, discount_rate, terminal_growt
 #   return(df)
 # }
 
-convert.c <- function(df, fxs) {
+# convert.c <- function(df, fxs) {
+#   # Create a named vector of exchange rates
+#   fx_rates <- setNames(fxs$price, fxs$symbol)
+#   
+#   # Create a vector of currency pairs
+#   currency_pairs <- paste0(df$reportedCurrency, "USD")
+#   
+#   # Create a vector of multipliers
+#   multipliers <- fx_rates[currency_pairs]
+#   multipliers[is.na(multipliers)] <- 1  # Set multiplier to 1 for USD and unmatched currencies
+#   
+#   # Define columns to exclude from conversion
+#   exclude_cols <- c('calendarYear', 'Ratio', 'ratio', 'cik', 'weightedAverageShsOutDil')
+#   
+#   # Identify numeric columns to convert
+#   cols_to_convert <- sapply(df, is.numeric) & 
+#     !names(df) %in% exclude_cols &
+#     !grepl("Ratio|ratio", names(df))
+#   
+#   # Perform vectorized multiplication
+#   df[, cols_to_convert] <- sweep(df[, cols_to_convert, drop = FALSE], 
+#                                  1, multipliers, `*`)
+#   print(df)
+#   return(df)
+# }
+
+convert.c <- function(df, fxs, reportedCurrency, currency_to) {
   # Create a named vector of exchange rates
   fx_rates <- setNames(fxs$price, fxs$symbol)
   
-  # Create a vector of currency pairs
-  currency_pairs <- paste0(df$reportedCurrency, "USD")
+  # Create the currency pair
+  currency_pair <- paste0(reportedCurrency, currency_to)
   
-  # Create a vector of multipliers
-  multipliers <- fx_rates[currency_pairs]
-  multipliers[is.na(multipliers)] <- 1  # Set multiplier to 1 for USD and unmatched currencies
+  # Get the multiplier
+  multiplier <- fx_rates[currency_pair]
+  if (is.na(multiplier)) multiplier <- 1  # Set multiplier to 1 for USD and unmatched currencies
   
   # Define columns to exclude from conversion
   exclude_cols <- c('calendarYear', 'Ratio', 'ratio', 'cik', 'weightedAverageShsOutDil')
@@ -283,9 +309,9 @@ convert.c <- function(df, fxs) {
     !grepl("Ratio|ratio", names(df))
   
   # Perform vectorized multiplication
-  df[, cols_to_convert] <- sweep(df[, cols_to_convert, drop = FALSE], 
-                                 1, multipliers, `*`)
+  df[, cols_to_convert] <- df[, cols_to_convert, drop = FALSE] * multiplier
   
+  # print(df)
   return(df)
 }
 

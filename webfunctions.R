@@ -172,7 +172,7 @@ create_news_container <- function(symbol, type = "News", date = NA, title = NA, 
     
     h5(title, style = "margin-top: 0; margin-bottom: 10px; color: #333;"),
     
-    p(substr(text, 1, 350), style = "margin: 0; color: #555;")
+    p(substr(text, 1, 550), style = "margin: 0; color: #555;")
   )
   }
 }

@@ -78,6 +78,7 @@ ui <- fluidPage(
                 inputId = 'mstrSmblBtn',
                 label = NULL,
                 icon = icon("search"),
+                disabled = TRUE,
                 style = "
         padding: 10px 20px;
         font-size: 16px;
@@ -140,11 +141,11 @@ ui <- fluidPage(
     
     
     
-    #### TAB Financial News and Updates ----
+    #### TAB News & Updates ----
     
     tabPanel(
-      title = "Financial News and Updates",
-      id = "Financial News and Updates",
+      title = "News & Updates",
+      id = "News & Updates",
       # News/Press Release
       div(
         class = "container-fluid",
@@ -168,8 +169,8 @@ ui <- fluidPage(
     ), 
     #### TAB MACRO ----
     tabPanel(
-      title = "Global Market Overview",
-      id = "Global Market Overview",
+      title = "Market Overview",
+      id = "Market Overview",
       div(
         class = "container-fluid",
         style = "max-width: 1400px; margin: auto;",
@@ -211,11 +212,16 @@ ui <- fluidPage(
                   class = "card shadow-sm",
                   div(
                     class = "card-body",
-                    h5(class = "card-title d-flex justify-content-between align-items-center", 
-                       'Commodities'
+                    div(
+                      style = "display: flex; justify-content: space-between; align-items: center;",
+                      h5(class = "card-title", 'Commodities'),
+                      div(
+                        style = "display: flex; align-items: center;",
+                        checkboxInput('i_diff_cmdts', 'Difference Series', FALSE),
+                        icon("info-circle", 
+                             title = "This chart displays various commodity prices over time. Use the 'Difference Series' checkbox to toggle between absolute values and period-over-period changes.")
+                      )
                     ),
-                    div(class = "card-title d-flex justify-content-end align-items-start", 
-                        checkboxInput('i_diff_cmdts', 'Difference Series', FALSE)),
                     plotlyOutput('cmdts', height = '2200px') %>% 
                       shinycssloaders::withSpinner(type = 5, color = "#0dc5c1", size = 0.5)
                   )
@@ -235,11 +241,16 @@ ui <- fluidPage(
                   class = "card shadow-sm",
                   div(
                     class = "card-body",
+                    div(
+                      style = "display: flex; justify-content: space-between; align-items: center;",
                     h5(class = "card-title d-flex justify-content-between align-items-center", 
                        'Economic Indicators'
                     ),
                     div(class = "card-title d-flex justify-content-end align-items-start", 
-                        checkboxInput('i_diff_econs', 'Difference Series', FALSE)),
+                        checkboxInput('i_diff_econs', 'Difference Series', FALSE),
+                        icon("info-circle", 
+                             title = "This chart displays various economic indicators over time. Use the 'Difference Series' checkbox to toggle between absolute values and period-over-period changes.")),
+                    ),
                     plotlyOutput('ecn', height = '2200px') %>% 
                       shinycssloaders::withSpinner(type = 5, color = "#0dc5c1", size = 0.5)
                   )
@@ -269,9 +280,46 @@ ui <- fluidPage(
             div(
               class = "card-body",
               h5(class = "card-title", "Stock Price"),
-              plotlyOutput('stkP') %>% shinycssloaders::withSpinner(type = 5, color = "#0dc5c1", size = 0.5)
+              plotlyOutput('stkP') %>% shinycssloaders::withSpinner(type = 5, color = "#0dc5c1", size = 0.5),
+              fluidRow(
+                column(
+                  width = 12,
+                  div(
+                    style = "margin-top: 10px; padding: 5px; background-color: #f8f9fa; border-radius: 5px;",
+                    shinyWidgets::checkboxGroupButtons(
+                      inputId = "options",
+                      label = NULL,
+                      choices = c("Log Scale", "Show Insider Trading", "Enable Drag"),
+                      selected = NULL,
+                      status = "primary",
+                      size = "sm",
+                      direction = "horizontal",
+                      justified = FALSE,
+                      individual = TRUE
+                    ),
+                    div(
+                      style = "display: inline-block;",
+                      shinyWidgets::radioGroupButtons(
+                        inputId = "dateRange",
+                        label = NULL, #"Date Range",
+                        choices = c("1M" = "1month", 
+                                    "3M" = "3months", 
+                                    "6M" = "6months", 
+                                    "1Y" = "1year", 
+                                    "5Y" = "5years", 
+                                    "10Y" = "10years",
+                                    "15Y" = "15years",
+                                    "All" = "all"),
+                        selected = "10years",
+                        status = "primary",
+                        justified = TRUE
+                      )
+                    )
+                  )
+                )
+              )
             )
-          ),
+          ), 
           div(
             class = "card shadow-sm mb-4",
             div(
@@ -289,7 +337,7 @@ ui <- fluidPage(
             )
           ),
           div(
-            class = "card shadow-sm",
+            class = "card shadow-sm mb-4",
             div(
               class = "card-body",
               h5(class = "card-title", "Profile"), 
@@ -297,7 +345,7 @@ ui <- fluidPage(
             )
           ),
           div(
-            class = "card shadow-sm",
+            class = "card shadow-sm mb-4",
             div(
               class = "card-body",
               h5(class = "card-title", "Analyst Guidance"),
@@ -449,7 +497,12 @@ ui <- fluidPage(
             class = "card shadow-sm mb-4",
             div(
               class = "card-body",
+              div(
+                style = "display: flex; justify-content: space-between; align-items: center;",
               h5(class = "card-title", "Relative Fundamentals"),
+              icon("info-circle", 
+                   title = "This chart compares the value of the selected indicator against the cohort specified in the controls tab. It displays the bottom 10 companies, the most common company, and the top 90 companies out of a total of 100, all ordered by the value of the indicator."),
+              ),
               plotOutput('stkFndmntlsRltv', height = "600px")
             )
           ),
@@ -555,7 +608,12 @@ tabPanel(
           class = "card shadow-sm mb-4",
           div(
             class = "card-body",
+            div(
+              style = "display: flex; justify-content: space-between; align-items: center;",
             h5(class = "card-title", "Stock Earnings Projection Model"),
+            icon("info-circle", 
+                 title = "This chart plots profitability per share multiplied by the average price multiple over the observed period against the share price. The smooth and linear lines identify the overall trend of the profit metric."),
+            ),
             div(
               style = "width: 100%; padding-top: 75%; position: relative;",
               div(
@@ -725,7 +783,12 @@ tabPanel(
           class = "card shadow-sm mb-4",
           div(
             class = "card-body",
+            div(
+              style = "display: flex; justify-content: space-between; align-items: center;",
             h5(class = "card-title", "Discounted Fair Value"),
+            icon("info-circle", 
+                 title = "The fair value is calculated using a 2-stage Discounted Cash Flow (DCF) model, consisting of a growth period followed by an exit multiple. Use the control panel to adjust the parameters of the model."),
+            ),
             plotlyOutput('mdlGauge'),
             wellPanel(
               h5('Control Helpers:'),
@@ -895,7 +958,12 @@ tabPanel(
                       class = "card shadow-sm",
                       div(
                         class = "card-body",
+                        div(
+                          style = "display: flex; justify-content: space-between; align-items: center;",
                         h5(class = "card-title", "Transcript "),
+                        icon("info-circle", 
+                             title = "Use the chat function to interact with the text. By default, it summarizes the key points of the investor call and identifies material information."),
+                        ),
                         div(uiOutput('callDate')),
                         uiOutput('trnscrpt') %>% shinycssloaders::withSpinner(type = 5, color = "#0dc5c1", size = 0.5)
                       )
@@ -955,7 +1023,12 @@ tabPanel(
                       class = "card shadow-sm",
                       div(
                         class = "card-body",
+                        div(
+                          style = "display: flex; justify-content: space-between; align-items: center;",
                         h5(class = "card-title", "Form 10-K/10-Q/20-F"),
+                        icon("info-circle", 
+                             title = "Use the chat function to interact with the text. Select an excerpt from the regulatory filing and ask the AI agent a question about it. By default, the AI will summarize the selected excerpt and identify material information."),
+                        ),
                         tabsetPanel(
                           id = "mainTabset",
                           tabPanel(
@@ -1177,6 +1250,8 @@ tabPanel(
 #          p("For more information, contact us at: info@example.com")
 # )
 
+#### ABOUT ----
+
 tabPanel("About", value = "about",
 div(class = "about-container",
     fluidRow(
@@ -1221,6 +1296,8 @@ div(class = "about-container",
                #   h3('About Me'),
                #   hr()
                # ),
+               br(),
+               br(),
                fluidRow(
                  column(width = 4,
                         div(class = "photo-container",
@@ -1452,7 +1529,7 @@ updateSelectizeInput(
   options = list(maxOptions = 15)
 )
 
-
+shinyjs::enable("mstrSmblBtn")
 
 
 
@@ -2129,7 +2206,7 @@ observeEvent(input$mstrSmblBtn, {
   }
   
   # point user to stock page
-  if (input$navbar %in% c("Financial News and Updates", "Global Market Overview", "about")) {
+  if (input$navbar %in% c("News & Updates", "Market Overview", "about")) {
     updateTabsetPanel(session, "navbar", selected = "Equity Insights")
   }
 
@@ -2455,7 +2532,7 @@ output$cmdts <- renderPlotly({
       modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
       displaylogo = FALSE  # This removes the Plotly logo, which is often desired
     ) %>% layout(
-      dragmode = FALSE
+      dragmode = TRUE
     )
     )#%>% style(hoverinfo = "none", traces = 1)
   
@@ -2655,7 +2732,7 @@ output$ecn <- renderPlotly({
              modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut'),
              displaylogo = FALSE  # This removes the Plotly logo, which is often desired
            ) %>% layout(
-             dragmode = FALSE
+             dragmode = TRUE
            ))
   
 })
@@ -2697,50 +2774,29 @@ output$ecn <- renderPlotly({
 #### STOCK PRICE CHART ----
 
 output$stkP <- renderPlotly({
-  start <- Sys.time()
-  tick_pref <- req(stkPrfl()) %>% pull(currency)
-  updatemenus <- list(
-    list(
-      active = 1,
-      buttons = list(list(
-        label = 'Log Scale',
-        method = 'update',
-        args = list(list(visible = c(TRUE, TRUE)), list(
-          # title = 'Log scale',
-          yaxis = list(
-            type = 'log',
-            tickprefix = tick_pref,
-            nticks = 10,
-            tickformat = ",.0f",
-            tickfont = list(size = 10),
-            title = ""
-          )
-        ))
-      ), list(label = 'Linear Scale',
-              method = 'update',
-              args = list(list(visible = c(TRUE, TRUE)), list(
-                # title = 'Linear scale',
-                yaxis = list(
-                  type = 'linear',
-                  tickprefix = tick_pref,
-                  nticks = 10,
-                  tickformat = ",.0f",
-                  tickfont = list(size = 10),
-                  title = ""
-                )
-              )))
-      ), direction = "right", pad = list(r = 10, t = 10), showactive = TRUE, x = 0.01, xanchor = "left", y = -0.05, yanchor = "top", type = "buttons", font = list(size = 10), buttonwidth = 80
-    )
+  tick_pref <- ''
+  # tick_pref <- req(stkPrfl()) %>% pull(currency)
+  date_filter <- dplyr::case_when(
+    input$dateRange == "1month" ~ Sys.Date() - 30,
+    input$dateRange == "3months" ~ Sys.Date() - 90,
+    input$dateRange == "6months" ~ Sys.Date() - 180,
+    input$dateRange == '1year' ~ Sys.Date() - 365,
+    input$dateRange == '5years' ~ Sys.Date() - (365 * 5),
+    input$dateRange == '10years' ~ Sys.Date() - (365 * 10),
+    input$dateRange == '15years' ~ Sys.Date() - (365 * 15),
+    TRUE ~ as.Date('1990-01-01')  # Default case for 'All'
   )
-  start <- Sys.time()
   
   d_ <- req(stkPrc()) %>%
+    filter(date >= date_filter) %>%
     mutate(calendarYear = lubridate::ymd(paste0(format(date, "%Y"), "-12-31")))
+  
   i_tr <- as.data.frame(general.APIcall(endpoint = "Insider-Trans", symbol = isolate(input$mstrSmbl)))
+  
   
   has_insider_data <- nrow(i_tr) > 0
   
-  if (has_insider_data) {
+  if (has_insider_data && ("Show Insider Trading" %in% input$options)) {
     i_tr <- i_tr %>%
       group_by(year) %>%
       summarise(
@@ -2770,70 +2826,80 @@ output$stkP <- renderPlotly({
   
   min_ = min(d_$close) * .95
   
-  start <- Sys.time()
+  d_e <- d_ %>% dplyr::slice_tail(n = 1)
   
-  p <- ggplotly(
-    d_ %>% ggplot() +
-      geom_ribbon(
+  p <- ggplot(d_) +
+    geom_ribbon(
+      aes(
+        x = date,
+        ymin = min_,
+        ymax = close
+      ),
+      alpha = 0.05,
+      fill = '#56CC9D'
+    ) +
+    geom_line(aes(x = date, y = close),  colour = '#56CC9D') +
+    geom_line(aes(x = date, y = close, text = paste0(
+      "<b>Date:</b> ", format(date, "%Y-%m-%d"), 
+      "<br><b>Close:</b> ", paste(tick_pref, as.character(close))
+    )), alpha = 0.0) +
+    geom_point(data = d_e, aes(x = date, y = close), fill = '#56CC9D', colour = 'black') +
+    geom_hline(yintercept = d_e$close, linetype='dashed', color = 'red') +
+    scale_x_date(date_breaks = "2 years", date_labels = "%y-%b") +
+    labs(x = '', y = '') +
+    theme_minimal()
+  
+  if ("Log Scale" %in% input$options) {
+    p <- p + scale_y_log10(n.breaks = 5)
+  } else {
+    p <- p + scale_y_continuous(n.breaks = 5)
+  }
+  
+  if (has_insider_data && ("Show Insider Trading" %in% input$options)) {
+    p <- p + 
+      geom_point(
         aes(
-          x = date,
-          ymin = min_,
-          ymax = close
+          x = calendarYear,
+          y = y_,
+          size = abs(netInsiderActivity),
+          color = netInsiderActivity > 0,
+          text = paste(
+            '<b>Date:</b>', format(date, "%Y-%m-%d"),
+            "<br><b>Close:</b>", scales::number(close),
+            "<br><b>Insider Trading Summary:</b>",
+            "<br>• Net Activity:", scales::number(netInsiderActivity),
+            "<br>• Buy/Sell Ratio:", ifelse(is.infinite(buySellRatio), "∞", round(buySellRatio, 2)),
+            "<br>• Purchases:", scales::comma(purchases),
+            "<br>• Sales:", scales::comma(sales),
+            "<br>• Total Bought:", scales::number(totalBought),
+            "<br>• Total Sold:", scales::number(totalSold)
+          )
         ),
-        alpha = 0.05,
-        fill = '#56CC9D'
+        show.legend = FALSE,
+        shape = 18
       ) +
-      geom_line(aes(x = date, y = close),  colour = '#56CC9D') +
-      geom_line(aes(x = date, y = close, text = paste0(
-        "<b>Date:</b> ", format(date, "%Y-%m-%d"), 
-        "<br><b>Close:</b> ", paste(tick_pref, as.character(close))
-      )), alpha = 0.0) +
-      {if(has_insider_data) 
-        geom_point(
-          aes(
-            x = calendarYear,
-            y = y_,
-            size = abs(netInsiderActivity),
-            color = netInsiderActivity > 0,
-            text = paste(
-              '<b>Date:</b>', format(date, "%Y-%m-%d"),
-              "<br><b>Close:</b>", scales::number(close),
-              "<br><b>Insider Trading Summary:</b>",
-              "<br>• Net Activity:", scales::number(netInsiderActivity),
-              "<br>• Buy/Sell Ratio:", ifelse(is.infinite(buySellRatio), "∞", round(buySellRatio, 2)),
-              "<br>• Purchases:", scales::comma(purchases),
-              "<br>• Sales:", scales::comma(sales),
-              "<br>• Total Bought:", scales::number(totalBought),
-              "<br>• Total Sold:", scales::number(totalSold)
-            )
-          ),
-          show.legend = FALSE
-        )
-      } +
-      {if(has_insider_data)
-        scale_color_manual(values = c("FALSE" = "#FF7851", "TRUE" = "#56CC9D"))
-      } +
-      {if(has_insider_data)
-        scale_size(range = c(2, 7))
-      } +
-      labs(x = '', y = '') +
-      theme_minimal(),
-    tooltip = 'text'
-  ) %>% 
-    layout(updatemenus = updatemenus) %>% 
-    style(hoverinfo = "none", traces = 1:2) %>%  # Disable hover for first trace
-    style(hoverinfo = "text", traces = 4) %>%  # Enable custom hover text for insider data
-    layout(showlegend = FALSE) %>%  # Hide the legend
+      scale_color_manual(values = c("FALSE" = "#FF7851", "TRUE" = "#56CC9D")) +
+      scale_size(range = c(2, 7))
+  }
+  
+  ggplotly(p, tooltip = 'text') %>% 
+    style(hoverinfo = "none", traces = 1:2) %>%
+    style(hoverinfo = "text", traces = 4) %>%
+    layout(showlegend = FALSE) %>%
     config(
       modeBarButtonsToRemove = c('zoom', 'pan', 'select', 'lasso2d', 'zoomIn', 'zoomOut')
     ) %>% 
     layout(
-      dragmode = FALSE,
-      hovermode = "closest"
+      dragmode = ifelse("Enable Drag" %in% input$options, TRUE, FALSE),
+      hovermode = "closest",
+      hovermode = "x",
+      spikedistance = -1,
+      hoverdistance = -1,
+      xaxis = list(showspikes = TRUE, spikemode = "across", spikesnap = "data", spikecolor = "black", spikethickness = 1),
+      yaxis = list(showspikes = TRUE, spikemode = "across", spikesnap = "data", spikecolor = "black", spikethickness = 1)
     )
-  
-  return(p)
 })
+
 
 
 
@@ -3493,7 +3559,7 @@ output$stkFndmntlsRltv <- renderPlot({
 
 output$stkInc_ <- renderDT({
   datatable(
-    req(stkInc()) %>% filter(calendarYear >= 2018) %>%
+    req(stkInc()) %>% #filter(calendarYear >= 2018) %>%
       mutate(across(
         where(is.numeric), ~ custom_number_format(.x, decimals = 2)
       )),
@@ -3512,7 +3578,7 @@ output$stkInc_ <- renderDT({
 
 output$stkBal_ <- renderDT({
   datatable(
-    req(stkBal()) %>% filter(calendarYear >= 2018) %>%
+    req(stkBal()) %>% #filter(calendarYear >= 2018) %>%
       mutate(across(
         where(is.numeric), ~ custom_number_format(.x, decimals = 2)
       )),
@@ -3531,7 +3597,7 @@ output$stkBal_ <- renderDT({
 
 output$stkCF_ <- renderDT({
   datatable(
-    req(stkCF()) %>% filter(calendarYear >= 2018) %>%
+    req(stkCF()) %>% #filter(calendarYear >= 2018) %>%
       mutate(across(
         where(is.numeric), ~ custom_number_format(.x, decimals = 2)
       )),
@@ -3663,24 +3729,24 @@ output$stkMdl <- renderPlotly({
                     xlim = c(max(d_e$mn_x), input$i_trgtFrct),
                     expand = T) +
     
-    labs(title = paste(
-      isolate(input$mstrSmbl),
-      ifelse(
-        input$i_mdlMtrc == 'epsdiluted',
-        'Price vs. EPS x average multiple',
-        ifelse(
-          input$i_mdlMtrc == 'fcfps',
-          'Price vs. FCF per share x average multiple',
-          ifelse(
-            input$i_mdlMtrc == 'operatingps',
-            'Price vs. Operating Earnings per share x average multiple',
-            'Price vs. Revenue per share x average multiple'
-          )
-        )
-      ),
-      '—',
-      "Annual"
-    )) +
+    # labs(title = paste(
+    #   isolate(input$mstrSmbl),
+    #   ifelse(
+    #     input$i_mdlMtrc == 'epsdiluted',
+    #     'Price vs. EPS x average multiple',
+    #     ifelse(
+    #       input$i_mdlMtrc == 'fcfps',
+    #       'Price vs. FCF per share x average multiple',
+    #       ifelse(
+    #         input$i_mdlMtrc == 'operatingps',
+    #         'Price vs. Operating Earnings per share x average multiple',
+    #         'Price vs. Revenue per share x average multiple'
+    #       )
+    #     )
+    #   ),
+    #   '—',
+    #   "Annual"
+    # )) +
     theme_minimal() +
     theme(
       axis.text = element_text(face = "bold",size = 7),
